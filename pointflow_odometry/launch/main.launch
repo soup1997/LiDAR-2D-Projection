@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+    <!--Start Node-->
+    <node pkg="pointflow_odometry" name="pointflow_odometry" type="pointflow_odometry_node" output="screen" clear_params="true">
+        <rosparam command="load" file="$(find pointflow_odometry)/config/parameters.yaml" />    
+    </node>
+    
+    <!-- Load rviz configuration -->
+    <node pkg="rviz" name="rviz" type="rviz" args="-d $(find pointflow_odometry)/config/config.rviz"/>
+
+
+    <!-- Play Kitti Dataset Bag file-->
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq00.bag"/>
+    <!--
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq00.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq01.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq02.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq04.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq05.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq06.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq07.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq08.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq09.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="-l /home/smeet/catkin_ws/kitti/seq10.bag"/>
+    -->
+
+</launch>

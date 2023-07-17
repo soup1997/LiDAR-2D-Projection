@@ -1,0 +1,22 @@
+point_cloud_topic: kitti/velo/pointcloud
+imu_topic: kitti/oxts/imu
+gnss_topic: kitti/oxts/gps/fix
+
+VLP16:
+  HRES: 0.4
+  VRES: 2.5
+  VFOV_MIN: -15.0
+  VFOV_MAX: 15.0
+  VFOV: 30.0
+  RANGE: 100.0
+  YFUDGE: 3
+  ZFUDGE: 1
+
+HDL64E:
+  HRES: 0.2
+  VRES: 0.4 
+  VFOV_MIN: -24.9
+  VFOV_MAX: 2.0
+  VFOV: 26.9
+  RANGE: 120.0
+  YFUDGE: 5
