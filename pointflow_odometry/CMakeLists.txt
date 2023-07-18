@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(pointflow_odometry)
 
-#set(TORCH_DIR "/home/smeet/libtorch/share/cmake/Torch")
-
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   pcl_ros
@@ -16,7 +14,6 @@ find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenMP)
-#find_package(Torch REQUIRED PATHS ${TORCH_DIR})
 
 if(OPENMP_FOUND)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -45,7 +42,6 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
-#  ${TORCH_INCLUDE_DIRS}
 )
 
 add_executable(${PROJECT_NAME}_node src/pointflow_odometry_node.cpp src/pfo.cpp src/ieskf.cpp)
@@ -56,5 +52,19 @@ target_link_libraries(${PROJECT_NAME}_node
   ${EIGEN3_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${OpenMP_LIBRARIES}
-#  ${TORCH_LIBRARIES}
 )
+
+set(CMAKE_PREFIX_PATH ${HOME}/smeet/libtorch)
+message(STATUS "++++++ torch find path" ${CMAKE_PREFIX_PATH})
+
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
+if (NOT Torch_FOUND)
+    message(FATAL_ERROR "you should change CMAKE_PREFIX_PATH to libtorch dir")
+else ()
+    message(STATUS "found libtorch at " ${TORCH_LIBRARIES})
+endif ()
+
+target_link_libraries(${PROJECT_NAME}_node ${TORCH_LIBRARIES})
+set_property(TARGET ${PROJECT_NAME}_node PROPERTY CXX_STANDARD 11)

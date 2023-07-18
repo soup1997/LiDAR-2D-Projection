@@ -173,7 +173,7 @@ def load_dataset(root_dir, batch_size=64):
 if __name__ == '__main__':
     # img.size, gt.size = torch.Size([batch_size, 6, 64, 1024]) torch.Size([batch_size, 7])
 
-    root_dir = '/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/dataset/custom_sequence/'
+    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/lidar_projection/src/dataset/custom_sequence/'
     train_loader, valid_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=64)
 
     print("Train Loader Length:", len(train_loader))

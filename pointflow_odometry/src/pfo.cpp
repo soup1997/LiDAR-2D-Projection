@@ -1,6 +1,6 @@
 #include <pointflow_odometry/pfo.hpp>
 
-PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh){
+PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path){
     /*------------Image params-----------*/
     _xmax = 1800; _ymax = 77;
 
@@ -43,6 +43,17 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh){
     /*------------Subscriber Definition-----------*/
     pcd_sub = nh.subscribe(_point_cloud_topic, 10, &PFO::cloudCallback, this);
     imu_sub = nh.subscribe(_imu_topic, 10, &PFO::imuCallback, this);
+    
+    /*------------Load Pretrained model-----------*/
+
+    try{
+        pointflow_net = torch::jit::load(model_path);
+    }
+    catch (const c10::Error& e){
+        std::cerr <<"Error occured while loading the model:" << e.msg() << std::endl;
+        exit(-1);
+    }
+    std::cout << "loaded successfully" << std::endl;    
 }
 
 void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
@@ -54,6 +65,24 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
     cv::Mat img = pointCloud2ParnomaicView(*pcd_ptr, true);
     //_imgq.push(img);
     //stack_image();
+}
+
+
+void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg){
+    if(msg == nullptr) return;
+
+    _curr_imu_time = msg->header.stamp.toSec();
+    _gyroX = msg->angular_velocity.x;
+    _gyroY = msg->angular_velocity.y;
+    _gyroZ = msg->angular_velocity.z;
+
+    _accX = msg->linear_acceleration.x;
+    _accY = msg->linear_acceleration.y;
+    _accZ = msg->linear_acceleration.z;
+
+    _dt = _curr_imu_time - _prev_imu_time;
+
+    _prev_imu_time = _curr_imu_time;
 }
 
 
@@ -131,21 +160,4 @@ void PFO::stack_image(void){
         std::cout << stacked_img->size() << std::endl;
         _imgq.pop(); // after stacking the image, pop the img1       
     }
-}
-
-void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg){
-    if(msg == nullptr) return;
-
-    _curr_imu_time = msg->header.stamp.toSec();
-    _gyroX = msg->angular_velocity.x;
-    _gyroY = msg->angular_velocity.y;
-    _gyroZ = msg->angular_velocity.z;
-
-    _accX = msg->linear_acceleration.x;
-    _accY = msg->linear_acceleration.y;
-    _accZ = msg->linear_acceleration.z;
-
-    _dt = _curr_imu_time - _prev_imu_time;
-
-    _prev_imu_time = _curr_imu_time;
 }

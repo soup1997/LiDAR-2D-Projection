@@ -89,7 +89,7 @@ def valid_epoch(valid_loader):
 
 
 if __name__ == '__main__':
-    root_dir = '/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/dataset/custom_sequence/'
+    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = PointflowNet(init_st=-1.250, init_sq=0.500).to(device)
     criterion = Criterion().to(device)
@@ -120,9 +120,12 @@ if __name__ == '__main__':
             writer.add_scalar("Orientation Acc/Valid", valid_q_acc, epoch)
 
     # After training, save the model
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/PointFlow/trained_model/Pointflow_model_final.pth")
+    model.to('cpu')
+    model.eval()
+
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_final.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/PointFlow/trained_model/Pointflow_model_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_scripted.pt")
     writer.close()

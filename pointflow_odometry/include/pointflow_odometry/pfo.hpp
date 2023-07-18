@@ -20,11 +20,13 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 
+#include <torch/torch.h>
+#include <torch/script.h>
+
 class PFO{
     private:
         void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
         void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
-
         cv::Mat pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, bool show);
         int normalize(double &x, double xmin, double xmax);
         void stack_image(void);
@@ -52,8 +54,11 @@ class PFO{
         int _xmax, _ymax;
         std::queue<cv::Mat> _imgq;
 
+        /*---------Pretrained model---------*/
+        torch::jit::script::Module pointflow_net;
+
     public:
-        PFO(ros::NodeHandle nh, ros::NodeHandle private_nh);
+        PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path);
         ~PFO(){};
 };
 
