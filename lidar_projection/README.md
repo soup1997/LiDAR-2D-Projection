@@ -1,7 +1,6 @@
 # Directory Tree
 ```
 lidar_projection
-├─ .gitignore
 ├─ CMakeLists.txt
 ├─ config
 │  ├─ config.rviz
