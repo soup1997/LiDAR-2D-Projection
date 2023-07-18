@@ -1,12 +1,11 @@
 # PointFlow-Odometry
 
 ## Kitti-Dataset Transformation
-![image](https://github.com/soup1997/PointCloud-Odometry/assets/86957779/3eeee8eb-ad66-4615-8cb0-a6dffc01799e)
+![image](https://github.com/soup1997/PointFlow-Odometry/assets/86957779/989ff762-d23a-4bb5-ba1a-7ce947ee19f9)
 
 # To Do
-- [ ] Train the model
-- [ ] Need calibration between lidar and imu
-- [ ] Fusion with IMU as ESKF method
+- [ ] Load Trained model to cpp, need to fix CMakelists.txt problem
+- [ ] Fusion with IMU as IESKF method
 
 # Reference
 ## Paper
