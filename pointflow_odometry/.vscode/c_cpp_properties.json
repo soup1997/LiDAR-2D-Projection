@@ -7,9 +7,8 @@
       },
       "includePath": [
         "/opt/ros/noetic/include/**",
-        "/home/smeet/catkin_ws/src/PointFlow-Odometry/pointflow_odometry/include/**",
-        "/usr/include/**",
-        "/home/smeet/libtorch/**"
+        "/home/soup1997/catkin_ws/src/PointFlow-Odometry/pointflow_odometry/include/**",
+        "/usr/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "gcc-x64",

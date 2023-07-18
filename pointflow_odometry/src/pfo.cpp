@@ -2,7 +2,7 @@
 
 PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path){
     /*------------Image params-----------*/
-    _xmax = 1800; _ymax = 77;
+    xmax_ = 1800; ymax_ = 77;
 
     /*------------Imu variables-----------*/
     _gyroX = 0.0; _gyroY=0.0; _gyroZ=0.0;
@@ -39,13 +39,12 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path)
 
     private_nh.getParam("HDL64E/YFUDGE", _yfudge);
     ROS_INFO("HDL64E y axis fudge: %.2f", _yfudge);
-    
+
     /*------------Subscriber Definition-----------*/
     pcd_sub = nh.subscribe(_point_cloud_topic, 10, &PFO::cloudCallback, this);
     imu_sub = nh.subscribe(_imu_topic, 10, &PFO::imuCallback, this);
-    
-    /*------------Load Pretrained model-----------*/
 
+    /*------------Load Pretrained model-----------*/
     try{
         pointflow_net = torch::jit::load(model_path);
     }
@@ -62,9 +61,8 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_ptr(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(*msg, *pcd_ptr);
 
-    cv::Mat img = pointCloud2ParnomaicView(*pcd_ptr, true);
-    //_imgq.push(img);
-    //stack_image();
+    cv::Mat projected_img = pointCloud2ParnomaicView(*pcd_ptr, true);
+    cv::Mat stacked_img = stack_image();
 }
 
 
@@ -86,8 +84,9 @@ void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg){
 }
 
 
-cv::Mat PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, bool show){
-    cv::Mat projected_img(_ymax+1, _xmax+1, CV_8UC3, cv::Scalar(0, 0, 0));
+void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, bool show){
+    cv::Mat projected_img(ymax_+1, xmax_+1, CV_8UC3, cv::Scalar(0, 0, 0));
+    cv::Mat resized_img(64, 1024, CV_8UC3, cv::Scalar(0, 0, 0));
 
     # pragma omp parallel for
     for(auto &point: pcd.points){
@@ -120,27 +119,19 @@ cv::Mat PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd,
             projected_img.at<cv::Vec3b>(y_idx, x_idx)[2] = normalize(z, -50.5, 4.2);
         }       
     }
+    cv::resize(projected_img, resized_img, Size(64, 1024));
+    imgq_.push(resized_img);
 
     if(show) {
         cv::imshow("projected image", projected_img);
         cv::waitKey(1);
     }
-
-    return projected_img;
 }
-
-int PFO::normalize(double &x, double xmin, double xmax){
-    double x_new = (x - xmin) / (xmax - xmin) * 255.0;
-    return static_cast<int>(x_new);
-}
-
 
 void PFO::stack_image(void){
-    if(_imgq.size() >= 2) {
-        cv::Mat *stacked_img;
-
-        auto img1 = _imgq.front();
-        auto img2 = _imgq.back();
+    if(imgq_.size() >= 2) {
+        auto img1 = imgq_.front();
+        auto img2 = imgq_.back();
 
         // stack the two consecutive image
         std::vector<cv::Mat> img1_channels, img2_channels, stacked_channels;
@@ -156,8 +147,14 @@ void PFO::stack_image(void){
         stacked_channels.push_back(img2_channels[1]);
         stacked_channels.push_back(img2_channels[2]);
 
-        cv::merge(stacked_channels, *stacked_img);
-        std::cout << stacked_img->size() << std::endl;
-        _imgq.pop(); // after stacking the image, pop the img1       
+        cv::merge(stacked_channels, *stacked_img_);
+        std::cout << *stacked_img_->size() << std::endl;
+        imgq_.pop(); // after stacking the image, pop the img1     
     }
 }
+
+int PFO::normalize(const double &x, double &xmin, double &xmax){
+    double x_new = (x - xmin) / (xmax - xmin) * 255.0;
+    return static_cast<int>(x_new);
+}
+

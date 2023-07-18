@@ -1,4 +1,4 @@
-#include "pointflow_odometry/pfo.hpp"
+#include <pointflow_odometry/pfo.hpp>
 
 int main(int argc, char** argv){
 
