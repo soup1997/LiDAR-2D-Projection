@@ -1,29 +1,25 @@
 #include <pointflow_odometry/pfo.hpp>
 
-PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path){
-    /*------------Image params-----------*/
-    xmax_ = 1800; ymax_ = 77;
+PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh)
+{
+    /*------------ROS Subscriber Definition-----------*/
+    pcd_sub = nh.subscribe(point_cloud_topic, 10, &PFO::cloudCallback, this);
+    imu_sub = nh.subscribe(imu_topic, 10, &PFO::imuCallback, this);
 
-    /*------------Imu variables-----------*/
-    _gyroX = 0.0; _gyroY=0.0; _gyroZ=0.0;
-    _accX = 0.0; _accY = 0.0; _accZ=0.0;
-    _prev_imu_time=0.0; _curr_imu_time=0.0;
-    _dt=0.0;
+    /*------------Sensor Parameters-----------*/
+    private_nh.param<std::string>("point_cloud_topic", point_cloud_topic, "kitti/velo/pointcloud");
+    ROS_INFO("PointCloud2 topic: %s", point_cloud_topic.c_str());
 
-    /*------------Sensor params-----------*/
-    private_nh.param<std::string>("point_cloud_topic", _point_cloud_topic, "kitti/velo/pointcloud");
-    ROS_INFO("PointCloud2 topic: %s", _point_cloud_topic.c_str());
-
-    private_nh.param<std::string>("imu_topic", _imu_topic, "kitti/oxts/imu");
-    ROS_INFO("Imu topic: %s", _imu_topic.c_str());
+    private_nh.param<std::string>("imu_topic", imu_topic, "kitti/oxts/imu");
+    ROS_INFO("Imu topic: %s", imu_topic.c_str());
 
     private_nh.getParam("HDL64E/HRES", _hres);
     ROS_INFO("HDL64E horizontal resolution: %.2f", _hres);
-    _hres_rad = _hres * (CV_PI / 180.0);
+    _hres *= (CV_PI / 180.0); // need to convert [deg/s] to [rad/s]
 
     private_nh.getParam("HDL64E/VRES", _vres);
     ROS_INFO("HDL64E vertical resolution: %.2f", _vres);
-    _vres_rad = _vres * (CV_PI / 180.0);
+    _vres *= (CV_PI / 180.0); //  need to convert [deg/s] to [rad/s]
 
     private_nh.getParam("HDL64E/VFOV", _vfov);
     ROS_INFO("HDL64E vertical field of view: %.2f", _vfov);
@@ -40,61 +36,70 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, std::string model_path)
     private_nh.getParam("HDL64E/YFUDGE", _yfudge);
     ROS_INFO("HDL64E y axis fudge: %.2f", _yfudge);
 
-    /*------------Subscriber Definition-----------*/
-    pcd_sub = nh.subscribe(_point_cloud_topic, 10, &PFO::cloudCallback, this);
-    imu_sub = nh.subscribe(_imu_topic, 10, &PFO::imuCallback, this);
+    private_nh.getParam("OXTS_RT3003/ACC_BIAS", _acc_bias);
+    ROS_INFO("OXTS RT3003 acceleration Bias: %.2f [m/s^2]", _acc_bias);
 
-    /*------------Load Pretrained model-----------*/
-    try{
-        pointflow_net = torch::jit::load(model_path);
-    }
-    catch (const c10::Error& e){
-        std::cerr <<"Error occured while loading the model:" << e.msg() << std::endl;
-        exit(-1);
-    }
-    std::cout << "loaded successfully" << std::endl;    
+    private_nh.getParam("OXTS_RT3003/GYRO_BIAS", _gyro_bias);
+    ROS_INFO("OXTS RT3003 gyro bias: %.2f [deg/s]", _gyro_bias);
+    _gyro_bias *= (CV_PI / 180.0); //  need to convert [deg/s] to [rad/s]
+
+    /*---------IMU Variables---------*/
+    _curr_time = 0.0;
+    _prev_time = 0.0;
+
+    /*------------Image params-----------*/
+    _xmax = 1800;
+    _ymax = 77;
+
+    /*------------IESKF-----------*/
+    IESKF ieskf(_gyro_bias, _acc_bias);
+    ieskf.init();
 }
 
-void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg){
-    if(msg->data.size() == 0) return;
+void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
+    if (msg == nullptr)
+        return;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_ptr(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(*msg, *pcd_ptr);
 
-    cv::Mat projected_img = pointCloud2ParnomaicView(*pcd_ptr, true);
-    cv::Mat stacked_img = stack_image();
+    pointCloud2ParnomaicView(*pcd_ptr, true);
+    stack_image();
 }
 
+void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
+{
+    if (msg == nullptr)
+        return;
 
-void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg){
-    if(msg == nullptr) return;
+    _curr_time = msg->header.stamp.toSec();
 
-    _curr_imu_time = msg->header.stamp.toSec();
-    _gyroX = msg->angular_velocity.x;
-    _gyroY = msg->angular_velocity.y;
-    _gyroZ = msg->angular_velocity.z;
+    _gyro_val = Eigen::Vector3d(msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
+    _acc_val = Eigen::Vector3d(msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z);
 
-    _accX = msg->linear_acceleration.x;
-    _accY = msg->linear_acceleration.y;
-    _accZ = msg->linear_acceleration.z;
-
-    _dt = _curr_imu_time - _prev_imu_time;
-
-    _prev_imu_time = _curr_imu_time;
+    _prev_time = _curr_time;
 }
 
+int PFO::normalize(const double &x, double &xmin, double &xmax)
+{
+    double x_new = (x - xmin) / (xmax - xmin) * 255.0;
+    return static_cast<int>(x_new);
+}
 
-void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, bool show){
-    cv::Mat projected_img(ymax_+1, xmax_+1, CV_8UC3, cv::Scalar(0, 0, 0));
+void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, const bool &show)
+{
+    cv::Mat projected_img(ymax_ + 1, xmax_ + 1, CV_8UC3, cv::Scalar(0, 0, 0));
     cv::Mat resized_img(64, 1024, CV_8UC3, cv::Scalar(0, 0, 0));
 
-    # pragma omp parallel for
-    for(auto &point: pcd.points){
+#pragma omp parallel for
+    for (auto &point : pcd.points)
+    {
         // extract x, y, z, r points
         double x = point.x;
         double y = point.y;
         double z = point.z;
-        double r = std::sqrt(x*x + y*y);
+        double r = std::sqrt(x * x + y * y);
 
         // mapping to cylinder
         int x_idx = static_cast<int>(std::atan2(y, x) / _hres_rad);
@@ -113,25 +118,29 @@ void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, bo
         y_idx = std::trunc(y_idx - y_min);
 
         // fill the image
-        if (x_idx >= 0 && x_idx <= _xmax && y_idx >= 0 && y_idx <= _ymax){
+        if (x_idx >= 0 && x_idx <= _xmax && y_idx >= 0 && y_idx <= _ymax)
+        {
             projected_img.at<cv::Vec3b>(y_idx, x_idx)[0] = normalize(r, 0.0, _range);
             projected_img.at<cv::Vec3b>(y_idx, x_idx)[1] = normalize(y, -_range, _range);
             projected_img.at<cv::Vec3b>(y_idx, x_idx)[2] = normalize(z, -50.5, 4.2);
-        }       
+        }
     }
     cv::resize(projected_img, resized_img, Size(64, 1024));
-    imgq_.push(resized_img);
+    _img_queue.push(resized_img);
 
-    if(show) {
+    if (show)
+    {
         cv::imshow("projected image", projected_img);
         cv::waitKey(1);
     }
 }
 
-void PFO::stack_image(void){
-    if(imgq_.size() >= 2) {
-        auto img1 = imgq_.front();
-        auto img2 = imgq_.back();
+void PFO::stack_image(void)
+{
+    if (imgq_.size() >= 2)
+    {
+        auto img1 = _img_queue.front();
+        auto img2 = _img_queue.back();
 
         // stack the two consecutive image
         std::vector<cv::Mat> img1_channels, img2_channels, stacked_channels;
@@ -147,14 +156,8 @@ void PFO::stack_image(void){
         stacked_channels.push_back(img2_channels[1]);
         stacked_channels.push_back(img2_channels[2]);
 
-        cv::merge(stacked_channels, *stacked_img_);
-        std::cout << *stacked_img_->size() << std::endl;
-        imgq_.pop(); // after stacking the image, pop the img1     
+        cv::merge(stacked_channels, *_stacked_img); // make 6 channel image for model input
+        std::cout << *_stacked_img->size() << std::endl;
+        _img_queue.pop(); // after stacking the image, pop the img1
     }
 }
-
-int PFO::normalize(const double &x, double &xmin, double &xmax){
-    double x_new = (x - xmin) / (xmax - xmin) * 255.0;
-    return static_cast<int>(x_new);
-}
-
