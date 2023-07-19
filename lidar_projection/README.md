@@ -1,7 +1,6 @@
 # Directory Tree
 ```
 lidar_projection
-├─ .gitignore
 ├─ CMakeLists.txt
 ├─ config
 │  ├─ config.rviz
@@ -21,7 +20,7 @@ lidar_projection
    │  │  ├─ PointFlow.py
    │  │  ├─ TranslationNet.py
    │  │  └─ __init__.py
-   │  └─ submodules.py
+   │  │  └─ submodules.py
    ├─ __init__.py
    ├─ dataset
    │  ├─ __init__.py

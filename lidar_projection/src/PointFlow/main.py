@@ -33,7 +33,7 @@ def train_one_epoch(epoch, train_loader):
     orientation_acc = 0.0
 
     model.train()
-    progress_bar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch+1}/{num_epochs}, Train Loss: 0.0000')
+    progress_bar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch}/{num_epochs}, Train Loss: 0.0000')
 
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
