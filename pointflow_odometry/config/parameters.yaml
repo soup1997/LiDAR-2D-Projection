@@ -3,8 +3,10 @@ imu_topic: kitti/oxts/imu
 gnss_topic: kitti/oxts/gps/fix
 
 OXTS_RT3003:
-  ACC_BIAS: 4.906e-5 # [m/s^2]
-  GYRO_BIAS: 1.0e-2 # [deg/s]
+  ACC_BIAS: 4.905e-5 # [m/s^2]
+  ACC_STD: 0.100005 # [m/s^2]
+  GYRO_BIAS: 0.01 # [deg/s]
+  GYRO_STD: 0.100012 # [deg/s]
 
 VLP16:
   HRES: 0.4 # [deg]

@@ -1,6 +1,6 @@
 #include <pointflow_odometry/pfo.hpp>
 
-PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh)
+PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string &model_path)
 {
     /*------------ROS Subscriber Definition-----------*/
     pcd_sub = nh.subscribe(point_cloud_topic, 10, &PFO::cloudCallback, this);
@@ -36,12 +36,19 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh)
     private_nh.getParam("HDL64E/YFUDGE", _yfudge);
     ROS_INFO("HDL64E y axis fudge: %.2f", _yfudge);
 
-    private_nh.getParam("OXTS_RT3003/ACC_BIAS", _acc_bias);
-    ROS_INFO("OXTS RT3003 acceleration Bias: %.2f [m/s^2]", _acc_bias);
+    private_nh.getParam("OXTS_RT3003/ACC_STD", _acc_bias);
+    ROS_INFO("OXTS RT3003 acceleration bias: %.2f [m/s^2]", _acc_bias);
+
+    private_nh.getParam("OXTS_RT3003/ACC_BIAS", _acc_std);
+    ROS_INFO("OXTS RT3003 acceleration std: %.2f [m/s^2]", _acc_std);
 
     private_nh.getParam("OXTS_RT3003/GYRO_BIAS", _gyro_bias);
     ROS_INFO("OXTS RT3003 gyro bias: %.2f [deg/s]", _gyro_bias);
     _gyro_bias *= (CV_PI / 180.0); //  need to convert [deg/s] to [rad/s]
+
+    private_nh.getParam("OXTS_RT3003/GYRO_STD", _gyro_std);
+    ROS_INFO("OXTS RT3003 gyro std: %.2f [deg/s]", _gyro_std);
+    _gyro_std *= (CV_PI / 180.0); //  need to convert [deg/s] to [rad/s]
 
     /*---------IMU Variables---------*/
     _curr_time = 0.0;
@@ -51,8 +58,11 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh)
     _xmax = 1800;
     _ymax = 77;
 
+    /*------------Pytorch Model-----------*/
+    _pointflow = load_model(model_path)
+
     /*------------IESKF-----------*/
-    IESKF ieskf(_gyro_bias, _acc_bias);
+    IESKF ieskf(_acc_std, _acc_bias, _gyro_std, _gyro_std);
     ieskf.init();
 }
 
@@ -81,18 +91,12 @@ void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
     _prev_time = _curr_time;
 }
 
-int PFO::normalize(const double &x, double &xmin, double &xmax)
-{
-    double x_new = (x - xmin) / (xmax - xmin) * 255.0;
-    return static_cast<int>(x_new);
-}
-
 void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, const bool &show)
 {
     cv::Mat projected_img(ymax_ + 1, xmax_ + 1, CV_8UC3, cv::Scalar(0, 0, 0));
     cv::Mat resized_img(64, 1024, CV_8UC3, cv::Scalar(0, 0, 0));
 
-#pragma omp parallel for
+    #pragma omp parallel for
     for (auto &point : pcd.points)
     {
         // extract x, y, z, r points

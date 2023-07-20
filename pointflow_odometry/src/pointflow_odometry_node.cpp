@@ -3,8 +3,7 @@
 int main(int argc, char** argv){
 
     ros::init(argc, argv, "pointflow_odometry");
-
-    std::string model_path = "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_scripted.pt";
+    const std::string model_path = "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_scripted.pt";
     
     ros::NodeHandle nh;
     ros::NodeHandle private_nh("~"); // using private parameters in node

@@ -38,10 +38,14 @@ class PFO{
         double _yfudge;                     // yfudge factor
 
         /*---------IMU Parameters---------*/
+        double _acc_std; // acceleration standard deviation
+        double _gyro_std; // gyro standard deviation
         double _acc_bias; // acceleration bias
         double _gyro_bias; // gyro bias
 
         /*---------IMU Variables---------*/
+        Eigen::Vector3d _gyro_val;
+        Eigen::Vector3d _acc_val;
         double _curr_time;
         double _prev_time;
 
@@ -49,6 +53,9 @@ class PFO{
         int _xmax, _ymax;
         cv::Mat *_stacked_img;
         std::queue<cv::Mat> _img_queue;
+
+         /*---------Pretrained Model Variables---------*/
+        const torch::jit::Moudle _pointflow;
     
     public:
         PFO(ros::NodeHandle nh, ros::NodeHandle private_nh);
