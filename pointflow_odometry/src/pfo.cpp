@@ -75,6 +75,8 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
     pcl::fromROSMsg(*msg, *pcd_ptr);
 
     pointCloud2ParnomaicView(*pcd_ptr, true);
+
+
     stack_image();
 }
 
@@ -141,6 +143,7 @@ void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, co
 
 void PFO::stack_image(void)
 {
+    static std::mutex m;
     if (imgq_.size() >= 2)
     {
         auto img1 = _img_queue.front();
@@ -152,13 +155,13 @@ void PFO::stack_image(void)
         cv::split(img1, img1_channels);
         cv::split(img2, img2_channels);
 
-        stacked_channels.push_back(img1_channels[0]);
-        stacked_channels.push_back(img1_channels[1]);
-        stacked_channels.push_back(img1_channels[2]);
+        stacked_channels.emplace_back(img1_channels[0]);
+        stacked_channels.emplace_back(img1_channels[1]);
+        stacked_channels.emplace_back(img1_channels[2]);
 
-        stacked_channels.push_back(img2_channels[0]);
-        stacked_channels.push_back(img2_channels[1]);
-        stacked_channels.push_back(img2_channels[2]);
+        stacked_channels.emplace_back(img2_channels[0]);
+        stacked_channels.emplace_back(img2_channels[1]);
+        stacked_channels.emplace_back(img2_channels[2]);
 
         cv::merge(stacked_channels, *_stacked_img); // make 6 channel image for model input
         std::cout << *_stacked_img->size() << std::endl;

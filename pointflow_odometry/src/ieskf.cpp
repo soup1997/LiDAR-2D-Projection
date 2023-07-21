@@ -34,6 +34,13 @@ IESKF::IESKF(const double &a_std, const double &a_b, const double &w_std, const 
     Fi_.block<3, 3>(4, 3) = Eigen::Matrix3d::Identity();
     Fi_.block<3, 3>(7, 6) = Eigen::Matrix3d::Identity();
     Fi_.block<3, 3>(10, 9) = Eigen::Matrix3d::Identity();
+
+    V_ = 0.001 * Eigen::Matrix<double, 7, 7>::Identity(); // measurement의 covariance를 구하는 방법에 대해 더 생각해보자 (x, y, z, qw, qx, qy, qz)
+    H_.setZero();
+    H_.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
+    H_.block<4, 4>(6, 6) = Eigen::Matrix4d::Identity();
+    
+    G_.setZero();
 }
 
 void IESKF::set_nominal_state(const Eigen::Vector3d &a_m, const Eigen::Vector3d &w_m, const double &dt)
@@ -96,7 +103,22 @@ void IESKF::prediction(const Eigen::Vector3d &a_m, const Eigen::Vector3d &w_m, c
 }
 
 void IESKF::correction(const Eigen::VectorXd &z){
-    
+    Eigen::Matrix<double, 18, 7> K  = (P_* H_.transpose()) * (H_*P_* H_.transpose() + V_).inverse();
+    dx_ = K * (z - H_ * (dx_ + x_)); // error state하고 nominal state 합칠 때 skew symmetric으로 변경해야함
+    Eigen::MatrixXd I(Eigen::Matrix<double, STATE_SIZE, STATE_SIZE>::Identity());
+    P_ = (I - K*H_)*P_;
+
+    x_ += dx_; // final estimated_state
+    state_history_.emplace_back(x_);
+}
+
+void IESKF::reset(){
+    dx_.setZero();
+
+    G_.block<6, 6>(0, 0).diagonal() << 1, 1, 1, 1, 1;
+    G_.block<3, 3>(6, 6) = Eigen::Matrix3d::Identity() - to_skew(dtheta_);
+    G_.block<9, 9>(9, 9).diagonal() << 1, 1, 1, 1, 1, 1, 1, 1, 1;
+    P_ = G_*P_*G_.transpose(); 
 }
 
 Eigen::Matrix3d IESKF::to_skew(const Eigen::Vector3d &in)

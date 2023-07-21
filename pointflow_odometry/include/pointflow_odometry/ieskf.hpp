@@ -43,8 +43,9 @@ private:
     Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> Fx_; // error state transition matrix
     Eigen::Matrix<double, 14, 12> Fi_;                 // error state covariance transition matrix
 
-    Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> G_; // input matrix
-    Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> H_; // measurement matrix
+    Eigen::Matrix<double, 7, STATE_SIZE> H_;
+    Eigen::Matrix<double, 7, 7> V_; // covariance matrix of measurement(x, y, z, qw, qx, qy, qz)
+    Eigen::Matrix<double, STATE_SIZE, STATE_SIZE> G_;
 
     std::vector<Eigen::Matrix<double, STATE_SIZE, 1>> state_history_;
 
@@ -61,6 +62,5 @@ public:
 
     Eigen::Matrix3d to_skew(const Eigen::Vector3d &in);
     Eigen::Quaterniond to_quaternion(const Eigen::Vector3d &euler);
-    void compute_jacobian();
 };
 #endif
