@@ -44,7 +44,7 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME}_node src/pointflow_odometry_node.cpp src/pfo.cpp src/ieskf.cpp src/util.cpp)
+add_executable(${PROJECT_NAME}_node src/pointflow_odometry_node.cpp src/pfo.cpp src/util.cpp)
 
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}

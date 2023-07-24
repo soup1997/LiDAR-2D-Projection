@@ -3,10 +3,11 @@
 
 #include <torch/torch.h>
 #include <torch/script.h>
+#include <opencv2/core.hpp>
+#include <Eigen/Dense>
 
-int normalize(const double &x, double &xmin, double &xmax);
+int normalize(const double &x, double xmin, double xmax);
 torch::jit::script::Module load_model(const std::string &model_path);
-void cvt2Tensor(void);
-
-
+torch::Tensor matToTensor(const cv::Mat &stacked_img);
+Eigen::VectorXd tensorToEigen(const torch::Tensor& tensor);
 #endif

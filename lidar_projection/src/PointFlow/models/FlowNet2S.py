@@ -19,9 +19,6 @@ limitations under the License.
 import torch
 import torch.nn as nn
 from torch.nn import init
-
-import numpy as np
-
 from .submodules import *
 
 'Parameter count : 38,676,504 '

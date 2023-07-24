@@ -110,6 +110,7 @@ class lidar_projection:
         elif self.lidar_model == 'HDL64E':
             img[y_img, x_img, 2] = normalize(z_points, min=-50.5, max=4.2) # Channel 2: Z
 
+        print(img.shape)
         return img
 
     @ measure_execution_time
@@ -148,4 +149,4 @@ class lidar_projection:
 if __name__ == '__main__':
     cnt = 0
     lp = lidar_projection(lidar_model="HDL64E")
-    lp.main(show=False, save=True)
+    lp.main(show=True, save=False)

@@ -10,6 +10,8 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Imu.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <pcl_ros/transforms.h>
 #include <pcl_ros/point_cloud.h>
@@ -29,6 +31,8 @@ class PFO{
         /*---------ROS Definition---------*/
         ros::Subscriber pcd_sub; // PointCloud2 Subscriber
         ros::Subscriber imu_sub; // Imu Subscriber
+        ros::Publisher path_pub; // path publisher
+
         std::string point_cloud_topic;
         std::string imu_topic;
 
@@ -52,18 +56,19 @@ class PFO{
 
         /*---------Projected Img Parameters---------*/
         int _xmax, _ymax;
-        cv::Mat *_stacked_img;
+        cv::Mat _stacked_img;
         std::queue<cv::Mat> _img_queue;
 
-         /*---------Pretrained Model Variables---------*/
-        const torch::jit::Moudle _pointflow;
+        /*---------Pretrained Model Variables---------*/
+        torch::jit::Module _model;
     
     public:
-        PFO(ros::NodeHandle nh, ros::NodeHandle private_nh);
+        PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path);
         ~PFO(){};
 
         void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
         void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
+        void pathPublisher(const Eigen::Vector3d &translation, const Eigen::Quaterniond &orientation);
         
         void pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, const bool &show);
         void stack_image(void);
