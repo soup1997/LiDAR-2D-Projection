@@ -63,8 +63,7 @@ class lidar_projection:
 
     @ measure_execution_time
     def pointCloud2ParnomaicView(self, msg):
-        # Read points (x, y, z), if not transformed need to transform coordinate check VLP16 coordinate system
-        # if VLP16, image size is (15, 900)
+        # Read points (x, y, z), if not transformed, need to transform the coordinate. Please check VLP16 coordinate system
         pcd = np.array(list(pc2.read_points(msg, field_names=(
             'x', 'y', 'z'), skip_nans=True)))
 
@@ -131,11 +130,11 @@ class lidar_projection:
                 cv2.waitKey(1)
 
             if save:
-                cv2.imwrite('/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/dataset/custom_sequence/seq00/img/seq00_{0}.jpg'.format(cnt), img)
-                print(f'{cnt}/{kitti_time[0][-1]} of projection image')
+                cv2.imwrite('/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/seq02/img/seq02_{0}.jpg'.format(cnt), img)
+                print(f'{cnt}/{kitti_time[2][-1]} of projection image')
                 cnt += 1
                 
-                if(cnt > kitti_time[0][-1]):
+                if(cnt > kitti_time[2][-1]):
                     rospy.signal_shutdown('End of time')
                     exit(0)
 

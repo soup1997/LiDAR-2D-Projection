@@ -5,7 +5,9 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 
+
 import os
+from natsort import natsorted
 from PIL import Image
 import numpy as np
 
@@ -30,11 +32,11 @@ class KittiDataset(Dataset):
 
         # Set (img, gt) paths
         self.image_dir = os.path.join(root_dir, f'seq{sequence:02d}', 'img')
-        self.pose_dir = os.path.join(
-            root_dir, f'seq{sequence:02d}', f'pose_seq{sequence:02d}.txt')
+        self.pose_dir = os.path.join(root_dir, f'seq{sequence:02d}', f'pose_seq{sequence:02d}.txt')
 
         # Load (img, gt) files
-        self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith('.jpg')])[valid_time[0]: valid_time[1]+1]
+        self.image_files = natsorted([f for f in os.listdir(self.image_dir) if f.endswith('.jpg')])[valid_time[0]: valid_time[1]+1]
+        print(self.image_files)
         self.pose_file = self._load_poses()
 
         # According to sequence, apply different transformations
