@@ -61,6 +61,10 @@ class PFO{
 
         /*---------Pretrained Model Variables---------*/
         torch::jit::Module _model;
+
+        /*---------6-DOF Variables---------*/
+        Eigen::Vector3d _translation;
+        Eigen::Quaterniond _orientation;
     
     public:
         PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path);
@@ -68,7 +72,7 @@ class PFO{
 
         void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
         void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
-        void pathPublisher(const Eigen::Vector3d &translation, const Eigen::Quaterniond &orientation);
+        void pathPublisher(const Eigen::Vector3f &translation, const Eigen::Quaternionf &orientation);
         
         void pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, const bool &show);
         void stack_image(void);

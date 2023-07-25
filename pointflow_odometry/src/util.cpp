@@ -30,16 +30,16 @@ torch::Tensor matToTensor(const cv::Mat &stacked_img){
     return tensor_img;
 }
 
-Eigen::VectorXd tensorToEigen(const torch::Tensor& tensor) {
+Eigen::VectorXf tensorToEigen(const torch::Tensor& tensor) {
     auto tensor_1d = tensor.reshape({-1}); // Reshape to a 1D tensor
     int numel = tensor_1d.numel();
 
-    std::vector<double> data(numel);
+    std::vector<float> data(numel);
     auto tensor_data = tensor_1d.accessor<float, 1>();
 
     for (int i = 0; i < numel; ++i) {
-        data[i] = static_cast<double>(tensor_data[i]);
+        data[i] = static_cast<float>(tensor_data[i]);
     }
 
-    return Eigen::Map<Eigen::VectorXd>(data.data(), numel);
+    return Eigen::Map<Eigen::VectorXf>(data.data(), numel);
 }

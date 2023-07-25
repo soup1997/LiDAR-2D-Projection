@@ -101,23 +101,18 @@ class lidar_projection:
         img[y_img, x_img, 0] = normalize(
             r_points, min=0.0, max=self.lidar_range) # Channel 0: depth
         
-        img[y_img, x_img, 1] = normalize(
-            y_points, min=-self.lidar_range, max=self.lidar_range) # Channel 1: Y
-        
-        if self.lidar_model == 'VLP16':
-            img[y_img, x_img, 2] = normalize(z_points, min=-(25.0 + self.z_fudge), max=(25.0 + self.z_fudge)) # Channel 2: Z
-        
-        elif self.lidar_model == 'HDL64E':
-            img[y_img, x_img, 2] = normalize(z_points, min=-50.5, max=4.2) # Channel 2: Z
+        img[y_img, x_img, 1] = normalize(x_points, min=-self.lidar_range, max=self.lidar_range) # Channel 1: X
 
-        print(img.shape)
+        img[y_img, x_img, 2] = normalize(
+            y_points, min=-self.lidar_range, max=self.lidar_range) # Channel 2: Y
+
         return img
 
     @ measure_execution_time
     def stack_image(self, img1, img2):
         return np.concatenate((img1, img2), axis=2)
 
-    def main(self, show=True, save=True):
+    def main(self, show=False, save=True):
         global cnt
 
         while self.pcd is None:
@@ -130,17 +125,17 @@ class lidar_projection:
 
             if show:    
                 cv2.imshow('Depth', img[:, :, 0])
-                cv2.imshow('Y', img[:, :, 1])
-                cv2.imshow('Z', img[:, :, 2])
-                print(img.shape)
+                cv2.imshow('x', img[:, :, 1])
+                cv2.imshow('y', img[:, :, 2])
+                cv2.imshow('Image', img)
                 cv2.waitKey(1)
 
             if save:
-                cv2.imwrite('/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), img)
-                print(f'{cnt}/{kitti_time[10][-1]} of projection image')
+                cv2.imwrite('/home/smeet/catkin_ws/src/PointCloud-Odometry/lidar_projection/src/dataset/custom_sequence/seq00/img/seq00_{0}.jpg'.format(cnt), img)
+                print(f'{cnt}/{kitti_time[0][-1]} of projection image')
                 cnt += 1
                 
-                if(cnt > kitti_time[10][-1]):
+                if(cnt > kitti_time[0][-1]):
                     rospy.signal_shutdown('End of time')
                     exit(0)
 
@@ -149,4 +144,4 @@ class lidar_projection:
 if __name__ == '__main__':
     cnt = 0
     lp = lidar_projection(lidar_model="HDL64E")
-    lp.main(show=True, save=False)
+    lp.main(show=False, save=True)

@@ -13,16 +13,21 @@ import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 80,
+hyperparams = {'Epoch': 50,
                'lr': 1e-5,
                'betas': [0.9, 0.999],
                'wd': 0.3,
-               'batch_size': 64}
+               'batch_size': 128}
 
 
 def calculate_rmse(predictions, targets):
     t_mse = nn.MSELoss()(predictions[:3], targets[:3])
-    q_mse = nn.MSELoss()(predictions[3:], targets[3:])
+
+    q_pred = predictions[3:]
+    q_magnitude = torch.norm(q_pred)
+    q = torch.div(q_pred, q_magnitude)
+
+    q_mse = nn.MSELoss()(q, targets[3:])
     t_rmse, q_rmse = torch.sqrt(t_mse), torch.sqrt(q_mse)
     return t_rmse, q_rmse
 
@@ -37,8 +42,7 @@ def train_one_epoch(epoch, train_loader):
 
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
-
-        output = model(img)  # (translation, orientation)
+        output = model(img)  # output is (x, y, z, qw, qx, qy, qz)
         loss = criterion(output, gt, model.st, model.sq)
         optimizer.zero_grad()
         loss.backward()
@@ -100,7 +104,7 @@ if __name__ == '__main__':
 
 
     num_epochs = hyperparams['Epoch']
-    # lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.9)
+    lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.75)
     train_loader, valid_loader, valid_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
 
     writer = SummaryWriter()
@@ -113,7 +117,7 @@ if __name__ == '__main__':
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
         if epoch % 10 == 0:
-            # lr_scheduler.step()  # apply StepLR every 10 epochs
+            lr_scheduler.step()  # apply StepLR every 10 epochs
             valid_loss, valid_t_acc, valid_q_acc = valid_epoch(valid_loader)
             writer.add_scalar("Loss/Valid", valid_loss, epoch)
             writer.add_scalar("Translation Acc/Valid", valid_t_acc, epoch)
@@ -123,9 +127,9 @@ if __name__ == '__main__':
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_final.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/PointFlow2_model_final.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/Pointflow_model_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/PointFlow2_model_scripted.pt")
     writer.close()

@@ -38,55 +38,8 @@ class KittiDataset(Dataset):
         self.pose_file = self._load_poses()
 
         # According to sequence, apply different transformations
-        self.transforms = {0: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.58692193, 0.3301893, 0.0962865),
-                                                                       (0.35340258, 0.21320646, 0.08324931)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           1: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.50520706, 0.2867759, 0.10206651),
-                                                                       (0.36996016, 0.22401515, 0.10400321)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           2: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.6087684, 0.3437133, 0.09761499),
-                                                                       (0.34740967, 0.21028088, 0.08274511)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           4: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.6039709, 0.34532478, 0.10994011),
-                                                                       (0.34533167, 0.21076982, 0.09049769)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           5: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.5969699, 0.3360664, 0.10014473),
-                                                                       (0.34749728, 0.21047164, 0.08389255)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           6: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.58958834, 0.33824897, 0.113432385),
-                                                                       (0.35417318, 0.21972811, 0.102402635)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           7: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.5878722, 0.3301315, 0.09515252),
-                                                                       (0.3536716, 0.21258134, 0.08227222)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           8: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.5868147, 0.32986256, 0.098948255),
-                                                                       (0.35147962, 0.2127681, 0.08660019)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           9: transforms.Compose([transforms.ToTensor(),
-                                                  transforms.Normalize((0.5988516, 0.33750767, 0.10193553),
-                                                                       (0.3488066, 0.21126577, 0.08636672)),
-                                                  transforms.Resize((64, 1024))]),
-
-                           10: transforms.Compose([transforms.ToTensor(),
-                                                   transforms.Normalize((0.6061787, 0.3401464, 0.09553494),
-                                                                        (0.34480524, 0.20893832,0.08096962)),
-                                                   transforms.Resize((64, 1024))])}
+        self.transforms = transforms.Compose([transforms.ToTensor(),
+                                              transforms.Resize((64, 1024))])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
@@ -101,15 +54,14 @@ class KittiDataset(Dataset):
         return len(self.image_files) - 1
 
     def __getitem__(self, idx):
-
         img1_name = self.image_files[idx]
         img2_name = self.image_files[idx+1]
 
         img1_path = os.path.join(self.image_dir, img1_name)
         img2_path = os.path.join(self.image_dir, img2_name)
 
-        img1_tensor = self.transforms[self.sequence](np.array(Image.open(img1_path)))
-        img2_tensor = self.transforms[self.sequence](np.array(Image.open(img2_path)))
+        img1_tensor = self.transforms(np.array(Image.open(img1_path)))
+        img2_tensor = self.transforms(np.array(Image.open(img2_path)))
 
         stacked_img = self._stack_image(img1_tensor, img2_tensor)
         ground_truth = self.pose_file[idx]
@@ -139,8 +91,9 @@ def load_dataset(root_dir, batch_size=64):
     test_datasets = []
 
     for seq, valid_time in kitti_time.items():
-        dataset = KittiDataset(root_dir=root_dir, sequence=seq, valid_time=valid_time)
-        
+        dataset = KittiDataset(
+            root_dir=root_dir, sequence=seq, valid_time=valid_time)
+
         '''
         mean_, std_ = calcultate_norm(dataset)
         print(mean_, std_)
@@ -171,9 +124,7 @@ def load_dataset(root_dir, batch_size=64):
 
 
 if __name__ == '__main__':
-    # img.size, gt.size = torch.Size([batch_size, 6, 64, 1024]) torch.Size([batch_size, 7])
-
-    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/lidar_projection/src/dataset/custom_sequence/'
+    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     train_loader, valid_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=64)
 
     print("Train Loader Length:", len(train_loader))

@@ -1,6 +1,6 @@
 #include <pointflow_odometry/pfo.hpp>
 
-PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path): _xmax(1800),_ymax(77), _curr_time(0.0), _prev_time(0.0)
+PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path) : _xmax(1800), _ymax(77), _curr_time(0.0), _prev_time(0.0), _translation(Eigen::Vector3d::Zero()), _orientation(Eigen::Quaterniond::Identity())
 {
     /*------------Sensor Parameters-----------*/
     private_nh.param<std::string>("point_cloud_topic", point_cloud_topic, "kitti/velo/pointcloud");
@@ -55,12 +55,12 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model
     ROS_INFO("Pretrained model loaded sucessfully");
 
     /*------------IESKF-----------*/
-    //IESKF ieskf(_acc_std, _acc_bias, _gyro_std, _gyro_std);
-    //ieskf.init();
+    // IESKF ieskf(_acc_std, _acc_bias, _gyro_std, _gyro_std);
+    // ieskf.init();
 }
 
 void PFO::stack_image(void)
-{   
+{
     auto img1 = _img_queue.front();
     auto img2 = _img_queue.back();
 
@@ -79,31 +79,41 @@ void PFO::stack_image(void)
     stacked_channels.emplace_back(img2_channels[2]);
 
     cv::merge(stacked_channels, _stacked_img); // make 6 channel image for model input
-    _img_queue.pop(); // after stacking the image, pop the img 1
+    _img_queue.pop();                          // after stacking the image, pop the img 1
 }
 
-void PFO::pathPublisher(const Eigen::Vector3d &translation, const Eigen::Quaterniond &orientation){
+void PFO::pathPublisher(const Eigen::Vector3f &translation, const Eigen::Quaternionf &orientation)
+{
     static nav_msgs::Path path;
     static int seq = 0;
 
+    // transform local pose to global pose
+    _translation += translation;
+    _orientation *= orientation;
+    _orientation.normalize();
+
+
     path.header.seq = seq;
-    path.header.frame_id = "base_link";
+    path.header.frame_id = "world";
     path.header.stamp = ros::Time::now();
 
     geometry_msgs::PoseStamped pose;
     pose.header.seq = seq;
+    //path.header.frame_id = "";
     pose.header.stamp = ros::Time::now();
-    pose.pose.position.x = translation(0);
-    pose.pose.position.y = translation(1);
-    pose.pose.position.z = translation(2);
-    pose.pose.orientation.w = orientation.w();
-    pose.pose.orientation.x = orientation.x();
-    pose.pose.orientation.y = orientation.y();
-    pose.pose.orientation.z = orientation.z();
-    seq++;
+    pose.pose.position.x = _translation(0);
+    pose.pose.position.y = _translation(1);
+    pose.pose.position.z = 0.0;
+
+    pose.pose.orientation.w = _orientation.w();
+    pose.pose.orientation.x = _orientation.x();
+    pose.pose.orientation.y = _orientation.y();
+    pose.pose.orientation.z = _orientation.z();
 
     path.poses.push_back(pose);
     path_pub.publish(path);
+    
+    seq++;
 }
 
 void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, const bool &show)
@@ -111,14 +121,14 @@ void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, co
     cv::Mat projected_img(_ymax + 1, _xmax + 1, CV_8UC3, cv::Scalar(0, 0, 0));
     cv::Mat resized_img(64, 1024, CV_8UC3, cv::Scalar(0, 0, 0));
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto &point : pcd.points)
     {
         // extract x, y, z, r points
         double x = point.x;
         double y = point.y;
         double z = point.z;
-        double r = std::sqrt(x*x + y*y);
+        double r = std::sqrt(x * x + y * y);
 
         // mapping to cylinder
         int x_idx = static_cast<int>(std::atan2(y, x) / (_hres * (CV_PI / 180.0)));
@@ -140,16 +150,16 @@ void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, co
         if (x_idx >= 0 && x_idx <= _xmax && y_idx >= 0 && y_idx <= _ymax)
         {
             projected_img.at<cv::Vec3b>(y_idx, x_idx)[0] = normalize(r, 0.0, _range);
-            projected_img.at<cv::Vec3b>(y_idx, x_idx)[1] = normalize(y, -_range, _range);
-            projected_img.at<cv::Vec3b>(y_idx, x_idx)[2] = normalize(z, -50.5, 4.2);
+            projected_img.at<cv::Vec3b>(y_idx, x_idx)[1] = normalize(x, -_range, _range);
+            projected_img.at<cv::Vec3b>(y_idx, x_idx)[2] = normalize(y, -_range, _range);
         }
     }
-    
+
     cv::resize(projected_img, resized_img, cv::Size(1024, 64));
     _img_queue.push(resized_img);
 
     if (show)
-    {   
+    {
         cv::imshow("projected image", projected_img);
         cv::imshow("resized image", resized_img);
         cv::waitKey(1);
@@ -157,8 +167,9 @@ void PFO::pointCloud2ParnomaicView(const pcl::PointCloud<pcl::PointXYZ> &pcd, co
 }
 
 void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
-{   
-    if (msg == nullptr) return;
+{
+    if (msg == nullptr)
+        return;
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 
@@ -166,16 +177,20 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
     pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_ptr(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::fromROSMsg(*msg, *pcd_ptr);
     pointCloud2ParnomaicView(*pcd_ptr, false);
-    
-    if (_img_queue.size() >= 2){
+
+    if (_img_queue.size() >= 2)
+    {
         stack_image();
         torch::Tensor tensor_img(matToTensor(_stacked_img));
-        torch::Tensor output(_model.forward({tensor_img}).toTensor());
-        Eigen::VectorXd output_vec(tensorToEigen(output));
+        torch::Tensor output(_model.forward({tensor_img}).toTensor()); 
+        std::cout << "1: " << output << std::endl;
         
-        Eigen::Vector3d translation(output_vec(0), output_vec(1), output_vec(2));
-        Eigen::Quaterniond orientation(output_vec(3), output_vec(4), output_vec(5), output_vec(6));
+        Eigen::VectorXf output_vec(tensorToEigen(output)); // output이랑 tensorToEigen결과랑 다름, 수정 필요
+        Eigen::Vector3f translation(output_vec(0), output_vec(1), output_vec(2));
+        Eigen::Quaternionf orientation(output_vec(3), output_vec(4), output_vec(5), output_vec(6));
         orientation.normalize();
+
+        std::cout << "2: " << translation << " " << orientation.coeffs() << std::endl;
 
         pathPublisher(translation, orientation);
     }
@@ -183,13 +198,13 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
 
     std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
     std::chrono::milliseconds sec(std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
-    std::cout << "Execution Time on CloudCallback: " << sec.count()  << " ms\n";
-
+    std::cout << "Execution Time on CloudCallback: " << sec.count() << " ms\n";
 }
 
 void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
 {
-    if (msg == nullptr) return;
+    if (msg == nullptr)
+        return;
 
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 

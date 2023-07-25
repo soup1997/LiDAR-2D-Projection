@@ -9,5 +9,5 @@
 int normalize(const double &x, double xmin, double xmax);
 torch::jit::script::Module load_model(const std::string &model_path);
 torch::Tensor matToTensor(const cv::Mat &stacked_img);
-Eigen::VectorXd tensorToEigen(const torch::Tensor& tensor);
+Eigen::VectorXf tensorToEigen(const torch::Tensor& tensor);
 #endif

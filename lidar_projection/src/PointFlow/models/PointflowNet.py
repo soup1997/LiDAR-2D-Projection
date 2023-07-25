@@ -16,7 +16,7 @@ class Criterion(nn.Module):
         return q
 
     def forward(self, pred, gt, st, sq):
-        p_hat, p = pred[:3], gt[:3] # traslation
+        p_hat, p = pred[:3], gt[:3] # translation
         q_hat, q = pred[3:], gt[3:] # orientation(quaternion)
         q = self._normalize_quaternion(q)
         

@@ -14,24 +14,17 @@ class ONET(nn.Module):
 
         # Fully Connected layers
         self.fc = nn.Sequential(
-            nn.Linear(fc_size, 1024),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(1024, 512),
+            nn.Linear(fc_size, 512),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 128),
             nn.LeakyReLU(0.2),
             nn.Linear(128, 64),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(64, 32),
+            nn.Dropout(0.1),
+            nn.Linear(64, 16),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(32, 16),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(16, 8),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
-            nn.Linear(8, 4))
+            nn.Dropout(0.1),
+            nn.Linear(16, 4))
 
     def forward(self, x):
         x = self.flownet2(x)
