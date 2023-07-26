@@ -16,7 +16,7 @@ from tqdm import tqdm
 hyperparams = {'Epoch': 100,
                'lr': 1e-5,
                'betas': [0.9, 0.999],
-               'batch_size': 16}
+               'batch_size': 32}
 
 
 def calculate_rmse(predictions, targets):
@@ -93,7 +93,7 @@ def valid_epoch(valid_loader):
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = SqueezeFlowNet(init_t_coeff=10.0, init_o_coeff=100.0).to(device)
+    model = SqueezeFlowNet(init_t_coeff=50.0, init_o_coeff=50.0).to(device)
     criterion = Criterion().to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
