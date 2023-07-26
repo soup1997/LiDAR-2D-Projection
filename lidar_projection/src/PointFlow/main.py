@@ -53,7 +53,7 @@ def train_one_epoch(epoch, train_loader):
 
         progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
 
-    print(f"Epoch: {epoch}, translation coefficient: {model.t_coeff}, orientation coefficient:{model.o_coeff}")
+    print(f"Epoch: {epoch}, translation coefficient: {model.t_coeff.item()}, orientation coefficient:{model.o_coeff.item()}")
     print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
