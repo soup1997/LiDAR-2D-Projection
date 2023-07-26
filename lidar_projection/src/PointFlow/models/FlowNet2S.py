@@ -105,6 +105,7 @@ class FlowNet2S(FlowNetS):
     def __init__(self, batchNorm=False, div_flow=20):
         super(FlowNet2S,self).__init__(input_channels = 6, batchNorm=batchNorm)
         self.div_flow = div_flow
+        self.rgb_max = 255.0
         
     def forward(self, x):
         out_conv1 = self.conv1(x)

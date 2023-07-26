@@ -36,7 +36,6 @@ class KittiDataset(Dataset):
 
         # Load (img, gt) files
         self.image_files = natsorted([f for f in os.listdir(self.image_dir) if f.endswith('.jpg')])[valid_time[0]: valid_time[1]+1]
-        print(self.image_files)
         self.pose_file = self._load_poses()
 
         # According to sequence, apply different transformations
@@ -45,7 +44,7 @@ class KittiDataset(Dataset):
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
-        pose_data = torch.tensor(pose_data, dtype=torch.float32)
+        pose_data = torch.tensor(pose_data, dtype=torch.float64)
         return pose_data
 
     def _stack_image(self, img1, img2):

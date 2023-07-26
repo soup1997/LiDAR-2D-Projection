@@ -130,11 +130,11 @@ class lidar_projection:
                 cv2.waitKey(1)
 
             if save:
-                cv2.imwrite('/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/seq02/img/seq02_{0}.jpg'.format(cnt), img)
-                print(f'{cnt}/{kitti_time[2][-1]} of projection image')
+                cv2.imwrite('/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), img)
+                print(f'{cnt}/{kitti_time[10][-1]} of projection image')
                 cnt += 1
                 
-                if(cnt > kitti_time[2][-1]):
+                if(cnt > kitti_time[10][-1]):
                     rospy.signal_shutdown('End of time')
                     exit(0)
 

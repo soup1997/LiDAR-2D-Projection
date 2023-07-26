@@ -13,21 +13,15 @@ import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 50,
+hyperparams = {'Epoch': 100,
                'lr': 1e-5,
                'betas': [0.9, 0.999],
-               'wd': 0.3,
-               'batch_size': 128}
+               'batch_size': 16}
 
 
 def calculate_rmse(predictions, targets):
     t_mse = nn.MSELoss()(predictions[:3], targets[:3])
-
-    q_pred = predictions[3:]
-    q_magnitude = torch.norm(q_pred)
-    q = torch.div(q_pred, q_magnitude)
-
-    q_mse = nn.MSELoss()(q, targets[3:])
+    q_mse = nn.MSELoss()(predictions[3:], targets[3:])
     t_rmse, q_rmse = torch.sqrt(t_mse), torch.sqrt(q_mse)
     return t_rmse, q_rmse
 
@@ -42,8 +36,9 @@ def train_one_epoch(epoch, train_loader):
 
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
-        output = model(img)  # output is (x, y, z, qw, qx, qy, qz)
-        loss = criterion(output, gt, model.st, model.sq)
+        output = model(img)  # output is (x, y, z, roll, pitch, yaw)
+        loss = criterion(output, gt)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -76,7 +71,7 @@ def valid_epoch(valid_loader):
         for batch_idx, (img, gt) in enumerate(valid_loader):
             img, gt = img.to(device), gt.to(device)
             output = model(img)
-            loss = criterion(output, gt, model.st, model.sq)
+            loss = criterion(output, gt)
             valid_t_acc, valid_q_acc = calculate_rmse(output, gt)
 
             valid_loss += loss.item()
@@ -95,16 +90,15 @@ def valid_epoch(valid_loader):
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = PointflowNet(init_st=-1.250, init_sq=0.500).to(device)
+    model = PointflowNet(init_st=-0.250, init_sq=0.500).to(device)
     criterion = Criterion().to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
-                           lr=hyperparams['lr'],
-                           weight_decay=hyperparams['wd'])
+                           lr=hyperparams['lr'])
 
 
     num_epochs = hyperparams['Epoch']
-    lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.75)
+    # lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
     train_loader, valid_loader, valid_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
 
     writer = SummaryWriter()
@@ -117,7 +111,7 @@ if __name__ == '__main__':
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
         if epoch % 10 == 0:
-            lr_scheduler.step()  # apply StepLR every 10 epochs
+            # lr_scheduler.step()  # apply StepLR every 10 epochs
             valid_loss, valid_t_acc, valid_q_acc = valid_epoch(valid_loader)
             writer.add_scalar("Loss/Valid", valid_loss, epoch)
             writer.add_scalar("Translation Acc/Valid", valid_t_acc, epoch)

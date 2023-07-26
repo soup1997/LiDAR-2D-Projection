@@ -24,7 +24,7 @@ class ONET(nn.Module):
             nn.Linear(64, 16),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.1),
-            nn.Linear(16, 4))
+            nn.Linear(16, 3))
 
     def forward(self, x):
         x = self.flownet2(x)
