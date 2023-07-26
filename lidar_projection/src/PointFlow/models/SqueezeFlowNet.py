@@ -15,7 +15,7 @@ class Criterion(nn.Module):
 
         return q
 
-    def forward(self, pred, gt):
+    def forward(self, pred, gt, t_coeff, o_coeff):
         p_hat, p = pred[:3], gt[:3] # translation
         q_hat, q = pred[3:], gt[3:] # orientation(quaternion)
         q = self._normalize_quaternion(q)
@@ -23,22 +23,23 @@ class Criterion(nn.Module):
         p_error = torch.pow(torch.norm(p - p_hat), 2)
         q_error = torch.pow(torch.norm(q - q_hat), 2)
 
-        loss = (p_error) + 100 * (q_error)
+        loss = (t_coeff * p_error) + (o_coeff * q_error)
         
         return loss
     
-class PointflowNet(nn.Module):
-    def __init__(self, init_st=-5.0, init_sq=5.0):
-        super(PointflowNet, self).__init__()
-        # self.st = nn.Parameter(torch.Tensor([init_st]))
-        # self.sq = nn.Parameter(torch.Tensor([init_sq]))
+class SqueezeFlowNet(nn.Module):
+    def __init__(self, init_t_coeff=20.0, init_o_coeff=50.0):
+        super(SqueezeFlowNet, self).__init__()
 
-        self.onet = ONET(fc_size=131072)
-        self.tnet = TNET(fc_size=24192)
+        self.t_coeff = nn.Parameter(torch.Tensor([init_t_coeff]))
+        self.o_coeff = nn.Parameter(torch.Tensor([init_o_coeff]))
+
+        self.onet = ONET()
+        self.tnet = TNET(fc_size=131072)
     
     def forward(self, x):
         translation = self.tnet(x)
         orientation = self.onet(x)
 
-        pose = torch.cat((translation, orientation), dim=1) # (x, y, z, qw, qx, qy, qz)
+        pose = torch.cat((translation, orientation), dim=1) # (x, y, z, roll, pitch, yaw)
         return pose

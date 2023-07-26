@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from dataloader import *
-from models.PointflowNet import *
+from PointFlow.models.SqueezeFlowNet import *
 from dataloader import *
 from main import *
 
@@ -27,6 +27,6 @@ if __name__ == '__main__':
             output = model(img)
             pose = output.cpu().numpy().reshape(-1)
             x, y, z = pose[:3]
-            qw, qx, qy, qz = pose[3:]
-            print(f"Translation: (x:{x:.6e} y:{y:.6e} z:{z:.6e}) | Orientation: (qw:{qw:.6e} qx:{qx:.6e} qy:{qy:.6e} qz:{qz:.6e})")
-            f.write(f"{x:.6e} {y:.6e} {z:.6e} {qw:.6e} {qx:.6e} {qy:.6e} {qz:.6e}\n")
+            roll, pitch, yaw = pose[3:]
+            #print(f"Translation: (x:{x:.6e} y:{y:.6e} z:{z:.6e}) | Orientation: (qw:{qw:.6e} qx:{qx:.6e} qy:{qy:.6e} qz:{qz:.6e})")
+            f.write(f"{x:.6e} {y:.6e} {z:.6e} {roll:.6e} {pitch:.6e} {yaw:.6e}\n")

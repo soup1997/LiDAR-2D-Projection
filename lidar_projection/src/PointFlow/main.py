@@ -7,7 +7,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from dataloader import *
-from models.PointflowNet import *
+from models.SqueezeFlowNet import *
 
 import torchsummary
 from tqdm import tqdm
@@ -37,11 +37,13 @@ def train_one_epoch(epoch, train_loader):
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
         output = model(img)  # output is (x, y, z, roll, pitch, yaw)
-        loss = criterion(output, gt)
+        loss = criterion(output, gt, model.t_coeff, model.o_coeff)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        #print(f"output: {output[0]}\ngt: {gt[0]}")
 
         train_t_acc, train_q_acc = calculate_rmse(output, gt)
 
@@ -51,6 +53,7 @@ def train_one_epoch(epoch, train_loader):
 
         progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
 
+    print(f"Epoch: {epoch}, translation coefficient: {model.t_coeff}, orientation coefficient:{model.o_coeff}")
     print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
@@ -71,7 +74,7 @@ def valid_epoch(valid_loader):
         for batch_idx, (img, gt) in enumerate(valid_loader):
             img, gt = img.to(device), gt.to(device)
             output = model(img)
-            loss = criterion(output, gt)
+            loss = criterion(output, gt, model.t_coeff, model.o_coeff)
             valid_t_acc, valid_q_acc = calculate_rmse(output, gt)
 
             valid_loss += loss.item()
@@ -90,7 +93,7 @@ def valid_epoch(valid_loader):
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = PointflowNet(init_st=-0.250, init_sq=0.500).to(device)
+    model = SqueezeFlowNet(init_t_coeff=10.0, init_o_coeff=100.0).to(device)
     criterion = Criterion().to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
@@ -103,6 +106,7 @@ if __name__ == '__main__':
 
     writer = SummaryWriter()
     torchsummary.summary(model, input_size=(6, 64, 1024))
+    torch.set_printoptions(sci_mode=False, precision=10)
 
     for epoch in range(1, num_epochs + 1):
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
@@ -121,9 +125,9 @@ if __name__ == '__main__':
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/PointFlow2_model_final.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/SqueezeFlowNet.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/PointFlow2_model_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/SqueezeFlowNet_scripted.pt")
     writer.close()
