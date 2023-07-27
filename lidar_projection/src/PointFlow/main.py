@@ -13,10 +13,13 @@ import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 100,
-               'lr': 1e-5,
+hyperparams = {'Epoch': 30,
+               'lr': 1e-4,
                'betas': [0.9, 0.999],
-               'batch_size': 32}
+               'batch_size': 8,
+               'wd':0.0001,
+               'step_size':10,
+               'gamma':0.1}
 
 
 def calculate_rmse(predictions, targets):
@@ -64,45 +67,46 @@ def train_one_epoch(epoch, train_loader):
     return train_loss, translation_acc, orientation_acc
 
 
-def valid_epoch(valid_loader):
+def test_epoch(test_loader):
     model.eval()
-    valid_loss = 0.0
+    test_loss = 0.0
     translation_acc = 0.0
     orientation_acc = 0.0
 
     with torch.no_grad():
-        for batch_idx, (img, gt) in enumerate(valid_loader):
+        for batch_idx, (img, gt) in enumerate(test_loader):
             img, gt = img.to(device), gt.to(device)
             output = model(img)
             loss = criterion(output, gt, model.t_coeff, model.o_coeff)
-            valid_t_acc, valid_q_acc = calculate_rmse(output, gt)
+            test_t_acc, test_q_acc = calculate_rmse(output, gt)
 
-            valid_loss += loss.item()
-            translation_acc += valid_t_acc.item()
-            orientation_acc += valid_q_acc.item()
+            test_loss += loss.item()
+            translation_acc += test_t_acc.item()
+            orientation_acc += test_q_acc.item()
 
-    print(f"Epoch: {epoch}, Valid Loss: {valid_loss/ len(valid_loader):.4f}, Valid translation acc: {valid_t_acc:.4f}, Valid orientaion acc: {valid_q_acc:.4f}")
+    print(f"Epoch: {epoch}, test Loss: {test_loss/ len(test_loader):.4f}, test translation acc: {test_t_acc:.4f}, test orientaion acc: {test_q_acc:.4f}")
 
-    valid_loss /= len(valid_loader)
-    translation_acc /= len(valid_loader)
-    orientation_acc /= len(valid_loader)
+    test_loss /= len(test_loader)
+    translation_acc /= len(test_loader)
+    orientation_acc /= len(test_loader)
 
-    return valid_loss, translation_acc, orientation_acc
+    return test_loss, translation_acc, orientation_acc
 
 
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = SqueezeFlowNet(init_t_coeff=50.0, init_o_coeff=50.0).to(device)
-    criterion = Criterion().to(device)
+    model = SqueezeFlowNet(init_t_coeff=27.0, init_o_coeff=67.0).to(device)
+    criterion = Criterion(orientation='euler').to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
-                           lr=hyperparams['lr'])
+                           lr=hyperparams['lr'],
+                           weight_decay=hyperparams['wd'])
 
 
     num_epochs = hyperparams['Epoch']
-    # lr_scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
-    train_loader, valid_loader, valid_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
+    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], )
+    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
 
     writer = SummaryWriter()
     torchsummary.summary(model, input_size=(6, 64, 1024))
@@ -114,12 +118,16 @@ if __name__ == '__main__':
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
-        if epoch % 10 == 0:
-            # lr_scheduler.step()  # apply StepLR every 10 epochs
-            valid_loss, valid_t_acc, valid_q_acc = valid_epoch(valid_loader)
-            writer.add_scalar("Loss/Valid", valid_loss, epoch)
-            writer.add_scalar("Translation Acc/Valid", valid_t_acc, epoch)
-            writer.add_scalar("Orientation Acc/Valid", valid_q_acc, epoch)
+        if epoch % hyperparams['step_size'] == 0:
+            for group in optimizer.param_groups:
+                group['weight_decay'] *= hyperparams['gamma']
+                
+            test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
+            writer.add_scalar("Loss/test", test_loss, epoch)
+            writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
+            writer.add_scalar("Orientation Acc/test", test_q_acc, epoch)
+        
+            lr_scheduler.step()  # apply StepLR every 10 epochs
 
     # After training, save the model
     model.to('cpu')

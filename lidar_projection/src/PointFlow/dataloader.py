@@ -100,10 +100,7 @@ def load_dataset(root_dir, batch_size=64):
         print(mean_, std_)
         '''
 
-        if seq == 7 or seq == 8:
-            valid_datasets.append(dataset)
-
-        elif seq == 9 or seq == 10:
+        if seq == 9 or seq == 10:
             test_datasets.append(dataset)
 
         else:
@@ -113,15 +110,16 @@ def load_dataset(root_dir, batch_size=64):
                               batch_size=batch_size,
                               shuffle=True)
 
-    valid_loader = DataLoader(dataset=ConcatDataset(valid_datasets),
-                              batch_size=batch_size,
-                              shuffle=True)
+    # valid_loader = DataLoader(dataset=ConcatDataset(valid_datasets),
+    #                           batch_size=batch_size,
+    #                           shuffle=True)
 
     test_loader = DataLoader(dataset=ConcatDataset(test_datasets),
                              batch_size=batch_size,
                              shuffle=True)
 
-    return train_loader, valid_loader, test_loader
+    # return train_loader, valid_loader, test_loader
+    return train_loader, test_loader
 
 
 if __name__ == '__main__':

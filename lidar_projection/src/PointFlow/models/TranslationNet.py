@@ -3,14 +3,14 @@
 import torch
 import torch.nn as nn
 
-from .FlowNet2S import *
+from .FlowNetS import *
 
 
 class TNET(nn.Module):
     def __init__(self, fc_size):
         super(TNET, self).__init__()
 
-        self.flownet2 = FlowNet2S(batchNorm=False, div_flow=20)
+        self.flownet2 = FlowNetS(batchNorm=False, input_channels=6)
 
         # Fully Connected layers
         self.fc = nn.Sequential(
