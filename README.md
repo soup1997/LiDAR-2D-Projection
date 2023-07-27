@@ -4,6 +4,7 @@
 ![image](https://github.com/soup1997/PointFlow-Odometry/assets/86957779/989ff762-d23a-4bb5-ba1a-7ce947ee19f9)
 
 # To Do
+- [ ] Fix the overfitting problem
 - [ ] Fusion with IMU as IESKF/AESKF method
 - [ ] Pose graph optimization
 - [ ] Mapping
