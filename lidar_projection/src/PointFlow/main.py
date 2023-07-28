@@ -7,19 +7,19 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from dataloader import *
-from models.SqueezeFlowNet import *
+from models.FlowFlowNet import *
 
 import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 30,
-               'lr': 1e-4,
+hyperparams = {'Epoch': 50,
+               'lr': 1e-5,
                'betas': [0.9, 0.999],
                'batch_size': 8,
-               'wd':0.0001,
+               'wd':1e-5,
                'step_size':10,
-               'gamma':0.1}
+               'gamma':0.5}
 
 
 def calculate_rmse(predictions, targets):
@@ -92,11 +92,10 @@ def test_epoch(test_loader):
 
     return test_loss, translation_acc, orientation_acc
 
-
 if __name__ == '__main__':
-    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
+    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = SqueezeFlowNet(init_t_coeff=27.0, init_o_coeff=67.0).to(device)
+    model = FlowFlowNet(init_t_coeff=10.0, init_o_coeff=100.0).to(device)
     criterion = Criterion(orientation='euler').to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
@@ -105,14 +104,15 @@ if __name__ == '__main__':
 
 
     num_epochs = hyperparams['Epoch']
-    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], )
-    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
+    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], verbose=True)
 
     writer = SummaryWriter()
     torchsummary.summary(model, input_size=(6, 64, 1024))
     torch.set_printoptions(sci_mode=False, precision=10)
 
     for epoch in range(1, num_epochs + 1):
+        train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
+        
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
         writer.add_scalar("Loss/Train", train_loss, epoch)
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
@@ -120,8 +120,8 @@ if __name__ == '__main__':
 
         if epoch % hyperparams['step_size'] == 0:
             for group in optimizer.param_groups:
-                group['weight_decay'] *= hyperparams['gamma']
-                
+                group['weight_decay'] *= hyperparams['gamma']   
+            
             test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
             writer.add_scalar("Loss/test", test_loss, epoch)
             writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
@@ -133,9 +133,9 @@ if __name__ == '__main__':
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/SqueezeFlowNet.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/SqueezeFlowNet.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/SqueezeFlowNet_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/SqueezeFlowNet_scripted.pt")
     writer.close()

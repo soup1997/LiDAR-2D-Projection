@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from dataloader import *
-from models.SqueezeFlowNet import *
+from PointFlow.models.FlowFlowNet import *
 from dataloader import *
 from main import *
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     dataset = DataLoader(KittiDataset(root_dir=root_dir, sequence=seq, valid_time=kitti_time[seq]), shuffle=False)
 
     device = "cuda" if torch.cuda.is_available() else 'cpu'
-    model = SqueezeFlowNet()
+    model = PoseFlowNet
     model.load_state_dict(torch.load('/home/smeet/catkin_ws/src/PointFlow-Odometry/trained_model/SqueezeFlowNet.pth'))
     model.eval()
 

@@ -30,14 +30,14 @@ class Criterion(nn.Module):
         
         return loss
     
-class SqueezeFlowNet(nn.Module):
+class FlowFlowNet(nn.Module):
     def __init__(self, init_t_coeff=10.0, init_o_coeff=100.0):
-        super(SqueezeFlowNet, self).__init__()
+        super(FlowFlowNet, self).__init__()
 
         self.t_coeff = nn.Parameter(torch.Tensor([init_t_coeff]))
         self.o_coeff = nn.Parameter(torch.Tensor([init_o_coeff]))
 
-        self.onet = ONET()
+        self.onet = ONET(fc_size=8192)
         self.tnet = TNET(fc_size=8192)
     
     def forward(self, x):
