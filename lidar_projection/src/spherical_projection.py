@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
+import open3d as o3d
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 
@@ -18,6 +19,8 @@ kitti_time = {0: [0, 4540],
               8: [1100, 5170],
               9: [0, 1590],
               10: [0, 1200]}
+
+voxel_size = 0.1
 
 class lidar_projection:
     def __init__(self, lidar_model):
@@ -66,10 +69,15 @@ class lidar_projection:
         # Read points (x, y, z), if not transformed, need to transform the coordinate. Please check VLP16 coordinate system
         pcd = np.array(list(pc2.read_points(msg, field_names=(
             'x', 'y', 'z'), skip_nans=True)))
-
-        x_points = pcd[:, 0]
-        y_points = pcd[:, 1]
-        z_points = pcd[:, 2]
+        
+        pcd_o3d = o3d.geometry.PointCloud()
+        pcd_o3d.points = o3d.utility.Vector3dVector(pcd)
+        voxel_grid = pcd_o3d.voxel_down_sample(voxel_size)
+        voxelized_pcd = np.asarray(voxel_grid.points)
+        
+        x_points = voxelized_pcd[:, 0]
+        y_points = voxelized_pcd[:, 1]
+        z_points = voxelized_pcd[:, 2]
         r_points = np.sqrt(x_points ** 2 + y_points ** 2)
 
         # MAPPING TO CYLINDER
