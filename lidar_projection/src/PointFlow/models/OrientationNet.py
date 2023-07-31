@@ -19,10 +19,10 @@ class ONET(nn.Module):
             nn.Linear(512, 128),
             nn.LeakyReLU(0.2),
             nn.Dropout(0.5),
-            nn.Linear(128, 64),
+            nn.Linear(128, 32),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.4),
-            nn.Linear(64, 16),
+            nn.Linear(32, 16),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
             nn.Linear(16, 3))

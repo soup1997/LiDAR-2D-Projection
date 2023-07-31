@@ -18,6 +18,16 @@ import torch
 import torch.nn as nn
 import numpy as np 
 
+def padding(input, target_size):
+    if input.size()[2] != target_size[2]:
+        output = nn.ReplicationPad2d((0, -1, 0, 0))(input)
+
+    if input.size()[3] != target_size[3]:
+        output = nn.ReplicationPad2d((0, 0, 0, -1))(input)
+    
+    return output
+
+
 def conv(batchNorm, in_planes, out_planes, kernel_size=3, stride=1):
     if batchNorm:
         return nn.Sequential(

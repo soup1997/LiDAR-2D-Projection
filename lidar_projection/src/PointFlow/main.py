@@ -17,9 +17,9 @@ hyperparams = {'Epoch': 50,
                'lr': 1e-5,
                'betas': [0.9, 0.999],
                'batch_size': 8,
-               'wd':1e-5,
+               'wd':0.0001,
                'step_size':10,
-               'gamma':0.5} 
+               'gamma':0.1}
 
 
 def calculate_rmse(predictions, targets):
@@ -55,6 +55,7 @@ def train_one_epoch(epoch, train_loader):
         orientation_acc += train_q_acc.item()
 
         progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
+
     print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
@@ -82,13 +83,14 @@ def test_epoch(test_loader):
             translation_acc += test_t_acc.item()
             orientation_acc += test_q_acc.item()
 
-    print(f"Epoch: {epoch}, Test Loss: {test_loss/ len(test_loader):.4f}, Test translation acc: {test_t_acc:.4f}, Test orientaion acc: {test_q_acc:.4f}")
+    print(f"Epoch: {epoch}, test Loss: {test_loss/ len(test_loader):.4f}, test translation acc: {test_t_acc:.4f}, test orientaion acc: {test_q_acc:.4f}")
 
     test_loss /= len(test_loader)
     translation_acc /= len(test_loader)
     orientation_acc /= len(test_loader)
 
     return test_loss, translation_acc, orientation_acc
+
 
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
@@ -102,29 +104,28 @@ if __name__ == '__main__':
 
 
     num_epochs = hyperparams['Epoch']
-    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], verbose=True)
+    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], )
+    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
 
     writer = SummaryWriter()
-    torchsummary.summary(model, input_size=(6, 64, 1024))
+    torchsummary.summary(model, input_size=(6, 64, 2048))
     torch.set_printoptions(sci_mode=False, precision=10)
 
     for epoch in range(1, num_epochs + 1):
-        train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
-        
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
-        test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
-
         writer.add_scalar("Loss/Train", train_loss, epoch)
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
-        writer.add_scalar("Loss/test", test_loss, epoch)
-        writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
-        writer.add_scalar("Orientation Acc/test", test_q_acc, epoch)
-
         if epoch % hyperparams['step_size'] == 0:
             for group in optimizer.param_groups:
-                group['weight_decay'] *= hyperparams['gamma']   
+                group['weight_decay'] *= hyperparams['gamma']
+                
+            test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
+            writer.add_scalar("Loss/test", test_loss, epoch)
+            writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
+            writer.add_scalar("Orientation Acc/test", test_q_acc, epoch)
+        
             lr_scheduler.step()  # apply StepLR every 10 epochs
 
     # After training, save the model

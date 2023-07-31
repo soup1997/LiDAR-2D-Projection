@@ -40,7 +40,7 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((64, 1024))])
+                                              transforms.Resize((64, 2048))])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)

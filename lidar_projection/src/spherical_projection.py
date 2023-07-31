@@ -105,13 +105,9 @@ class lidar_projection:
         # CONVERT TO IMAGE ARRAY
         img = np.zeros((y_max + 1, x_max + 1, 3), dtype=np.uint8)
         
-        img[y_img, x_img, 0] = normalize(
-            r_points, min=0.0, max=self.lidar_range) # Channel 0: depth
-        
-        img[y_img, x_img, 1] = normalize(x_points, min=-self.lidar_range, max=self.lidar_range) # Channel 1: X
-
-        img[y_img, x_img, 2] = normalize(
-            y_points, min=-self.lidar_range, max=self.lidar_range) # Channel 2: Y
+        img[y_img, x_img, 0] = normalize(r_points, min=0.0, max=self.lidar_range - 40.0) # Channel 0: depth
+        img[y_img, x_img, 1] = normalize(x_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 1: X
+        img[y_img, x_img, 2] = normalize(y_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 2: Y
 
         return img
 
@@ -138,7 +134,7 @@ class lidar_projection:
                 cv2.waitKey(1)
 
             if save:
-                cv2.imwrite('/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), img)
+                cv2.imwrite('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), img)
                 print(f'{cnt}/{kitti_time[10][-1]} of projection image')
                 cnt += 1
                 
@@ -151,4 +147,4 @@ class lidar_projection:
 if __name__ == '__main__':
     cnt = 0
     lp = lidar_projection(lidar_model="HDL64E")
-    lp.main(show=True, save=False)
+    lp.main(show=False, save=True)

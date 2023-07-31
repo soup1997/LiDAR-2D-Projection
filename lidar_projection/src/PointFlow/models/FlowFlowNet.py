@@ -33,8 +33,8 @@ class Criterion(nn.Module):
 class FlowFlowNet(nn.Module):
     def __init__(self):
         super(FlowFlowNet, self).__init__()
-        self.onet = ONET(fc_size=8192)
-        self.tnet = TNET(fc_size=8192)
+        self.onet = ONET(fc_size=16384)
+        self.tnet = TNET(fc_size=16384)
     
     def forward(self, x):
         translation = self.tnet(x)
