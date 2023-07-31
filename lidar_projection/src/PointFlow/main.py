@@ -17,9 +17,9 @@ hyperparams = {'Epoch': 50,
                'lr': 1e-5,
                'betas': [0.9, 0.999],
                'batch_size': 8,
-               'wd':0.0001,
+               'wd':1e-4,
                'step_size':10,
-               'gamma':0.1}
+               'gamma':0.3}
 
 
 def calculate_rmse(predictions, targets):

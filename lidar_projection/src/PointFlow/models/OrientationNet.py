@@ -15,17 +15,16 @@ class ONET(nn.Module):
         # Fully Connected layers
         self.fc = nn.Sequential(
             nn.Linear(fc_size, 512),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(512, 128),
-            nn.LeakyReLU(0.2),
-            nn.Dropout(0.5),
-            nn.Linear(128, 32),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.4),
-            nn.Linear(32, 16),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.1, inplace=True),
             nn.Dropout(0.3),
-            nn.Linear(16, 3))
+            nn.Linear(512, 128),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(128, 32),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(32, 3),
+            nn.LeakyReLU(0.1, inplace=True))
 
 
     def forward(self, x):
