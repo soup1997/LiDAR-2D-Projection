@@ -19,7 +19,7 @@ hyperparams = {'Epoch': 50,
                'batch_size': 8,
                'wd':1e-5,
                'step_size':10,
-               'gamma':0.5}
+               'gamma':0.5} 
 
 
 def calculate_rmse(predictions, targets):
@@ -40,7 +40,7 @@ def train_one_epoch(epoch, train_loader):
     for batch_idx, (img, gt) in enumerate(progress_bar):
         img, gt = img.to(device), gt.to(device)
         output = model(img)  # output is (x, y, z, roll, pitch, yaw)
-        loss = criterion(output, gt, model.t_coeff, model.o_coeff)
+        loss = criterion(output, gt)
 
         optimizer.zero_grad()
         loss.backward()
@@ -55,8 +55,6 @@ def train_one_epoch(epoch, train_loader):
         orientation_acc += train_q_acc.item()
 
         progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
-
-    print(f"Epoch: {epoch}, translation coefficient: {model.t_coeff.item()}, orientation coefficient:{model.o_coeff.item()}")
     print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
@@ -77,14 +75,14 @@ def test_epoch(test_loader):
         for batch_idx, (img, gt) in enumerate(test_loader):
             img, gt = img.to(device), gt.to(device)
             output = model(img)
-            loss = criterion(output, gt, model.t_coeff, model.o_coeff)
+            loss = criterion(output, gt)
             test_t_acc, test_q_acc = calculate_rmse(output, gt)
 
             test_loss += loss.item()
             translation_acc += test_t_acc.item()
             orientation_acc += test_q_acc.item()
 
-    print(f"Epoch: {epoch}, test Loss: {test_loss/ len(test_loader):.4f}, test translation acc: {test_t_acc:.4f}, test orientaion acc: {test_q_acc:.4f}")
+    print(f"Epoch: {epoch}, Test Loss: {test_loss/ len(test_loader):.4f}, Test translation acc: {test_t_acc:.4f}, Test orientaion acc: {test_q_acc:.4f}")
 
     test_loss /= len(test_loader)
     translation_acc /= len(test_loader)
@@ -95,7 +93,7 @@ def test_epoch(test_loader):
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = FlowFlowNet(init_t_coeff=10.0, init_o_coeff=100.0).to(device)
+    model = FlowFlowNet().to(device)
     criterion = Criterion(orientation='euler').to(device)
     optimizer = optim.Adam(model.parameters(),
                            betas=hyperparams['betas'],
@@ -114,28 +112,28 @@ if __name__ == '__main__':
         train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
         
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
+        test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
+
         writer.add_scalar("Loss/Train", train_loss, epoch)
         writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
 
+        writer.add_scalar("Loss/test", test_loss, epoch)
+        writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
+        writer.add_scalar("Orientation Acc/test", test_q_acc, epoch)
+
         if epoch % hyperparams['step_size'] == 0:
             for group in optimizer.param_groups:
                 group['weight_decay'] *= hyperparams['gamma']   
-            
-            test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
-            writer.add_scalar("Loss/test", test_loss, epoch)
-            writer.add_scalar("Translation Acc/test", test_t_acc, epoch)
-            writer.add_scalar("Orientation Acc/test", test_q_acc, epoch)
-        
             lr_scheduler.step()  # apply StepLR every 10 epochs
 
     # After training, save the model
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/SqueezeFlowNet.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/FlowFlowNet.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/SqueezeFlowNet_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/FlowFlowNet_scripted.pt")
     writer.close()

@@ -16,7 +16,7 @@ class Criterion(nn.Module):
 
         return q
 
-    def forward(self, pred, gt, t_coeff, o_coeff):
+    def forward(self, pred, gt):
         p_hat, p = pred[:3], gt[:3] # translation
         q_hat, q = pred[3:], gt[3:] # orientation(euler)
         
@@ -26,17 +26,13 @@ class Criterion(nn.Module):
         p_error = nn.SmoothL1Loss()(p, p_hat)
         q_error = nn.SmoothL1Loss()(q, q_hat)
 
-        loss = (t_coeff * p_error) + (o_coeff * q_error)
+        loss = (10.0 * p_error) + (100.0 * q_error)
         
         return loss
     
 class FlowFlowNet(nn.Module):
-    def __init__(self, init_t_coeff=10.0, init_o_coeff=100.0):
+    def __init__(self):
         super(FlowFlowNet, self).__init__()
-
-        self.t_coeff = nn.Parameter(torch.Tensor([init_t_coeff]))
-        self.o_coeff = nn.Parameter(torch.Tensor([init_o_coeff]))
-
         self.onet = ONET(fc_size=8192)
         self.tnet = TNET(fc_size=8192)
     

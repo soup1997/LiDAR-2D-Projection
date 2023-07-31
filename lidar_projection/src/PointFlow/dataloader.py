@@ -44,7 +44,7 @@ class KittiDataset(Dataset):
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
-        pose_data = torch.tensor(pose_data, dtype=torch.float64)
+        pose_data = torch.tensor(pose_data, dtype=torch.float32)
         return pose_data
 
     def _stack_image(self, img1, img2):

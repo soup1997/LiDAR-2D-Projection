@@ -18,12 +18,13 @@ class TNET(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 128),
             nn.LeakyReLU(0.2),
+            nn.Dropout(0.5),
             nn.Linear(128, 64),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.6),
+            nn.Dropout(0.4),
             nn.Linear(64, 16),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.7),
+            nn.Dropout(0.3),
             nn.Linear(16, 3))
 
     def forward(self, x):
