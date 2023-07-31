@@ -3,21 +3,21 @@
 ## Kitti-Dataset Transformation
 ![image](https://github.com/soup1997/PointFlow-Odometry/assets/86957779/989ff762-d23a-4bb5-ba1a-7ce947ee19f9)
 
-# To Do
+00: 2011_10_03_drive_0027 000000 004540\
+01: 2011_10_03_drive_0042 000000 001100\
+02: 2011_10_03_drive_0034 000000 004660\
+04: 2011_09_30_drive_0016 000000 000270\
+05: 2011_09_30_drive_0018 000000 002760\
+06: 2011_09_30_drive_0020 000000 001100\
+07: 2011_09_30_drive_0027 000000 001100\
+08: 2011_09_30_drive_0028 001100 005170\
+09: 2011_09_30_drive_0033 000000 001590\
+10: 2011_09_30_drive_0034 000000 001200
+
+https://github.com/tomas789/kitti2bag
+
+## To Do
 - [ ] Fix the overfitting problem
 - [ ] Fusion with IMU as IESKF/AESKF method
 - [ ] Pose graph optimization
 - [ ] Mapping
-
-# Reference
-## Paper
-1. Wang, Wei, et al. "Deeppco: End-to-end point cloud odometry through deep parallel neural network." 2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). IEEE, 2019.
-2. Dosovitskiy, Alexey, et al. "Flownet: Learning optical flow with convolutional networks." Proceedings of the IEEE international conference on computer vision. 2015.
-3. Velas, Martin, et al. "CNN for IMU assisted odometry estimation using velodyne LiDAR." 2018 IEEE International Conference on Autonomous Robot Systems and Competitions (ICARSC). IEEE, 2018.
-4. Sola, Joan. "Quaternion kinematics for the error-state Kalman filter." arXiv preprint arXiv:1711.02508 (2017).
-5. Qin, Chao, et al. "Lins: A lidar-inertial state estimator for robust and efficient navigation." 2020 IEEE international conference on robotics and automation (ICRA). IEEE, 2020.
-
-## Code
-1. https://github.com/ClementPinard/FlowNetPytorch
-2. https://github.com/ChaoqinRobotics/LINS---LiDAR-inertial-SLAM
-3. https://github.com/collector-m/lidar_projection

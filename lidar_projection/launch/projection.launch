@@ -8,7 +8,7 @@
     <!--<node pkg="rviz" name="rviz" type="rviz" args="-d $(find lidar_projection)/config/config.rviz"/>-->
     
     <!-- Kitti Dataset Bag file-->
-    <node pkg="rosbag" type="play" name="rosbag" args="/home/smeet/catkin_ws/kitti/seq10.bag"/>
+    <node pkg="rosbag" type="play" name="rosbag" args="/home/smeet/catkin_ws/kitti/seq00.bag"/>
 
     <!--
     <node pkg="rosbag" type="play" name="rosbag" args="/home/smeet/catkin_ws/kitti/seq00.bag"/>
