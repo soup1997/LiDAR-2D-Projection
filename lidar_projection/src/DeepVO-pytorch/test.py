@@ -1,19 +1,19 @@
 import torch
 import torch.nn as nn
 from dataloader import *
-from models.FlowFlowNet import *
+from PointFlow.models.DeepPCO import *
 from dataloader import *
 from main import *
 
 
 if __name__ == '__main__':
-    seq = 10
+    seq = 0
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
     dataset = DataLoader(KittiDataset(root_dir=root_dir, sequence=seq, valid_time=kitti_time[seq]), shuffle=False)
 
     device = "cuda" if torch.cuda.is_available() else 'cpu'
-    model = FlowFlowNet()
-    model.load_state_dict(torch.load('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/SqueezeFlowNet.pth'))
+    model = DeepPCO()
+    model.load_state_dict(torch.load('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/FlowFlowNet.pth'))
     model.eval()
 
     model.to(device)

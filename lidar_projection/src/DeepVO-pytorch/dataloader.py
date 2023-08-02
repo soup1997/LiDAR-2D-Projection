@@ -40,7 +40,7 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((64, 2048))])
+                                              transforms.Resize((128, 1024))])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
@@ -55,19 +55,16 @@ class KittiDataset(Dataset):
         return len(self.image_files) - 1
 
     def __getitem__(self, idx):
-        img1_name = self.image_files[idx]
-        img2_name = self.image_files[idx+1]
+        img_name = self.image_files[idx]
 
-        img1_path = os.path.join(self.image_dir, img1_name)
-        img2_path = os.path.join(self.image_dir, img2_name)
+        img_path = os.path.join(self.image_dir, img_name)
 
-        img1_tensor = self.transforms(np.array(Image.open(img1_path)))
-        img2_tensor = self.transforms(np.array(Image.open(img2_path)))
+        img_tensor = self.transforms(np.array(Image.open(img_path)))
 
-        stacked_img = self._stack_image(img1_tensor, img2_tensor)
+        #stacked_img = self._stack_image(img_tensor, img_tensor)
         ground_truth = self.pose_file[idx]
 
-        return stacked_img, ground_truth
+        return img_tensor, ground_truth
 
 
 def calcultate_norm(dataset):
@@ -123,9 +120,8 @@ def load_dataset(root_dir, batch_size=64):
 
 
 if __name__ == '__main__':
-    root_dir = '/home/smeet/catkin_ws/src/PointFlow-Odometry/dataset/custom_sequence/'
-    train_loader, valid_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=64)
+    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
+    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=64)
 
     print("Train Loader Length:", len(train_loader))
-    print("Valid Loader Length:", len(valid_loader))
     print("Test Loader Length:", len(test_loader))

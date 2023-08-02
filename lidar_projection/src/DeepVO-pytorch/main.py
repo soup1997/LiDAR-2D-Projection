@@ -2,24 +2,22 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from dataloader import *
-from models.FlowFlowNet import *
+from models.DeepPCO import *
 
-import torchsummary
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 50,
-               'lr': 1e-5,
+hyperparams = {'Epoch': 40,
+               'lr': 1e-4,
                'betas': [0.9, 0.999],
                'batch_size': 8,
-               'wd':1e-4,
                'step_size':10,
-               'gamma':0.3}
+               'weight_decay':1e-4,
+               'gamma':0.5}
 
 
 def calculate_rmse(predictions, targets):
@@ -95,19 +93,14 @@ def test_epoch(test_loader):
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = FlowFlowNet().to(device)
+    model = DeepPCO().to(device)
     criterion = Criterion(orientation='euler').to(device)
-    optimizer = optim.Adam(model.parameters(),
-                           betas=hyperparams['betas'],
-                           lr=hyperparams['lr'],
-                           weight_decay=hyperparams['wd'])
-
+    optimizer = optim.Adam(model.parameters(), betas=hyperparams['betas'], lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
 
     num_epochs = hyperparams['Epoch']
-    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], )
+    lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], gamma=hyperparams['gamma'])
 
     writer = SummaryWriter()
-    torchsummary.summary(model, input_size=(6, 64, 2048))
     torch.set_printoptions(sci_mode=False, precision=10)
 
     for epoch in range(1, num_epochs + 1):
@@ -123,19 +116,18 @@ if __name__ == '__main__':
         writer.add_scalar("Translation Acc/Test", test_t_acc, epoch)
         writer.add_scalar("Orientation Acc/Test", test_q_acc, epoch)
 
-        if epoch % hyperparams['step_size'] == 0:
-            for group in optimizer.param_groups:
-                group['weight_decay'] *= hyperparams['gamma']
         
+        if epoch % hyperparams['step_size'] == 0:
             lr_scheduler.step()  # apply StepLR every 10 epochs
+            torch.save(model.state_dict(), f"/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO_{epoch}.pth")
 
     # After training, save the model
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/FlowFlowNet.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/FlowFlowNet_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO_scripted.pt")
     writer.close()
