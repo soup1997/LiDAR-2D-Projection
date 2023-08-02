@@ -6,23 +6,45 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from dataloader import *
-from models.DeepPCO import *
-
+from model import *
 from tqdm import tqdm
 
 # define model hyperparmeters
-hyperparams = {'Epoch': 40,
-               'lr': 1e-4,
-               'betas': [0.9, 0.999],
+hyperparams = {'Epoch': 100,
+               'lr': 5 * 1e-4,
                'batch_size': 8,
-               'step_size':10,
-               'weight_decay':1e-4,
+               'step_size':20,
                'gamma':0.5}
 
 
+def load_pretrained_flownet():
+    global model
+
+    print('Load pretrained FlowNetS weight')
+    
+    pretrained_flownet = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO-pytorch/TrainedModel/flownets_EPE1.951.pth.tar'
+    pretrained_weight = torch.load(pretrained_flownet)
+
+    model_dict = model.state_dict()
+    update_dict = {k: v for k, v in pretrained_weight['state_dict'].items() if k in model_dict}
+    model_dict.update(update_dict)
+    model.load_state_dict(model_dict)
+
+
+def criterion(pred, gt):
+    p_hat, p = pred[:, :3], gt[:, :3]  # translation
+    q_hat, q = pred[:, 3:], gt[:, 3:]  # orientation(euler)
+
+    p_error = nn.MSELoss()(p, p_hat)
+    q_error = nn.MSELoss()(q, q_hat)
+
+    loss = p_error + (100.0 * q_error)
+
+    return loss
+
 def calculate_rmse(predictions, targets):
-    t_mse = nn.MSELoss()(predictions[:3], targets[:3])
-    q_mse = nn.MSELoss()(predictions[3:], targets[3:])
+    t_mse = nn.MSELoss()(predictions[:, :3], targets[:, :3])
+    q_mse = nn.MSELoss()(predictions[:, 3:], targets[:, 3:])
     t_rmse, q_rmse = torch.sqrt(t_mse), torch.sqrt(q_mse)
     return t_rmse, q_rmse
 
@@ -53,14 +75,13 @@ def train_one_epoch(epoch, train_loader):
         orientation_acc += train_q_acc.item()
 
         progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
-
-    print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
+    #print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
     translation_acc /= len(train_loader)
     orientation_acc /= len(train_loader)
-
     progress_bar.close()
+
     return train_loss, translation_acc, orientation_acc
 
 
@@ -91,20 +112,22 @@ def test_epoch(test_loader):
 
 
 if __name__ == '__main__':
-    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DeepPCO().to(device)
-    criterion = Criterion(orientation='euler').to(device)
-    optimizer = optim.Adam(model.parameters(), betas=hyperparams['betas'], lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
+    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/Dataset/custom_sequence/'
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = DeepVO(batchNorm=False).to(device)
+    load_pretrained_flownet()
+
+    optimizer = optim.Adagrad(model.parameters(), lr=hyperparams['lr'])
     num_epochs = hyperparams['Epoch']
     lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], gamma=hyperparams['gamma'])
 
     writer = SummaryWriter()
     torch.set_printoptions(sci_mode=False, precision=10)
+    torch.autograd.set_detect_anomaly(True)
 
     for epoch in range(1, num_epochs + 1):
-        train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'])
+        train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=hyperparams['batch_size'], shuffle=True)
         train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
         test_loss, test_t_acc, test_q_acc = test_epoch(test_loader)
         
@@ -118,16 +141,15 @@ if __name__ == '__main__':
 
         
         if epoch % hyperparams['step_size'] == 0:
-            lr_scheduler.step()  # apply StepLR every 10 epochs
-            torch.save(model.state_dict(), f"/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO_{epoch}.pth")
+            lr_scheduler.step()
 
     # After training, save the model
     model.to('cpu')
     model.eval()
 
-    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO.pth")
+    torch.save(model.state_dict(), "/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO-pytorch/TrainedModel/DeepVO.pth")
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/trained_model/DeepPCO_scripted.pt")
+    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO-pytorch/TrainedModel/DeepVO.pth")
     writer.close()

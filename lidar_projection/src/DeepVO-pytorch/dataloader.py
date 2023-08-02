@@ -32,7 +32,7 @@ class KittiDataset(Dataset):
 
         # Set (img, gt) paths
         self.image_dir = os.path.join(root_dir, f'seq{sequence:02d}', 'img')
-        self.pose_dir = os.path.join(root_dir, f'seq{sequence:02d}', f'pose_seq{sequence:02d}.txt')
+        self.pose_dir = os.path.join(root_dir, f'seq{sequence:02d}', f'relative{sequence:02d}.txt')
 
         # Load (img, gt) files
         self.image_files = natsorted([f for f in os.listdir(self.image_dir) if f.endswith('.jpg')])[valid_time[0]: valid_time[1]+1]
@@ -40,7 +40,7 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((128, 1024))])
+                                              transforms.Resize((128, 1800))])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
@@ -83,7 +83,7 @@ def calcultate_norm(dataset):
     return (mean_r, mean_g, mean_b), (std_r, std_g, std_b)
 
 
-def load_dataset(root_dir, batch_size=64):
+def load_dataset(root_dir, batch_size=64, shuffle=True):
     train_datasets = []
     valid_datasets = []
     test_datasets = []
@@ -96,8 +96,7 @@ def load_dataset(root_dir, batch_size=64):
         mean_, std_ = calcultate_norm(dataset)
         print(mean_, std_)
         '''
-
-        if seq == 9 or seq == 10:
+        if seq == 4 or seq == 9 or seq == 10:
             test_datasets.append(dataset)
 
         else:
@@ -105,7 +104,7 @@ def load_dataset(root_dir, batch_size=64):
 
     train_loader = DataLoader(dataset=ConcatDataset(train_datasets),
                               batch_size=batch_size,
-                              shuffle=True)
+                              shuffle=shuffle)
 
     # valid_loader = DataLoader(dataset=ConcatDataset(valid_datasets),
     #                           batch_size=batch_size,
@@ -113,15 +112,15 @@ def load_dataset(root_dir, batch_size=64):
 
     test_loader = DataLoader(dataset=ConcatDataset(test_datasets),
                              batch_size=batch_size,
-                             shuffle=True)
+                             shuffle=shuffle)
 
     # return train_loader, valid_loader, test_loader
     return train_loader, test_loader
 
 
 if __name__ == '__main__':
-    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/'
-    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=64)
+    root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/Dataset/custom_sequence/'
+    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=8)
 
     print("Train Loader Length:", len(train_loader))
     print("Test Loader Length:", len(test_loader))
