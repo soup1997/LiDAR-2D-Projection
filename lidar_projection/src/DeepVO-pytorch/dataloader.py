@@ -40,7 +40,7 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((128, 1800))])
+                                              transforms.Resize((64, 1800))])
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
@@ -55,16 +55,20 @@ class KittiDataset(Dataset):
         return len(self.image_files) - 1
 
     def __getitem__(self, idx):
-        img_name = self.image_files[idx]
+        img1_name = self.image_files[idx]
+        img2_name = self.image_files[idx+1]
 
-        img_path = os.path.join(self.image_dir, img_name)
+        img1_path = os.path.join(self.image_dir, img1_name)
+        img2_path = os.path.join(self.image_dir, img2_name)
 
-        img_tensor = self.transforms(np.array(Image.open(img_path)))
+        img1_tensor = self.transforms(np.array(Image.open(img1_path)))
+        img2_tensor = self.transforms(np.array(Image.open(img2_path)))
 
-        #stacked_img = self._stack_image(img_tensor, img_tensor)
+        stacked_img = self._stack_image(img1_tensor, img2_tensor)
+
         ground_truth = self.pose_file[idx]
 
-        return img_tensor, ground_truth
+        return stacked_img, ground_truth
 
 
 def calcultate_norm(dataset):
@@ -106,15 +110,10 @@ def load_dataset(root_dir, batch_size=64, shuffle=True):
                               batch_size=batch_size,
                               shuffle=shuffle)
 
-    # valid_loader = DataLoader(dataset=ConcatDataset(valid_datasets),
-    #                           batch_size=batch_size,
-    #                           shuffle=True)
-
     test_loader = DataLoader(dataset=ConcatDataset(test_datasets),
                              batch_size=batch_size,
                              shuffle=shuffle)
 
-    # return train_loader, valid_loader, test_loader
     return train_loader, test_loader
 
 

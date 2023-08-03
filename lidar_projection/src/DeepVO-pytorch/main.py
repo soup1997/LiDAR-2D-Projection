@@ -7,14 +7,15 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
 from dataloader import *
 from model import *
+from torchinfo import summary
 from tqdm import tqdm
 
 # define model hyperparmeters
 hyperparams = {'Epoch': 100,
-               'lr': 5 * 1e-4,
+               'lr': 1e-5,
                'batch_size': 8,
                'step_size':20,
-               'gamma':0.5}
+               'gamma':0.8}
 
 
 def load_pretrained_flownet():
@@ -38,7 +39,7 @@ def criterion(pred, gt):
     p_error = nn.MSELoss()(p, p_hat)
     q_error = nn.MSELoss()(q, q_hat)
 
-    loss = p_error + (100.0 * q_error)
+    loss = (p_error) + (100.0 * q_error)
 
     return loss
 
@@ -74,7 +75,8 @@ def train_one_epoch(epoch, train_loader):
         translation_acc += train_t_acc.item()
         orientation_acc += train_q_acc.item()
 
-        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}')
+        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train translation acc: {translation_acc / (batch_idx + 1):.4f}, Train orientation acc: {orientation_acc / (batch_idx + 1):.4f}')
+    
     #print(f"Epoch: {epoch}, Train loss: {train_loss / len(train_loader):.4f}, Train translation acc: {train_t_acc:.4f}, Train orientation acc: {train_q_acc:.4f}")
 
     train_loss /= len(train_loader)
@@ -91,8 +93,10 @@ def test_epoch(test_loader):
     translation_acc = 0.0
     orientation_acc = 0.0
 
+    progress_bar = tqdm(test_loader, total=len(test_loader), desc=f'Epoch {epoch}/{num_epochs}, Test Loss: 0.0000')
+
     with torch.no_grad():
-        for batch_idx, (img, gt) in enumerate(test_loader):
+        for batch_idx, (img, gt) in enumerate(progress_bar):
             img, gt = img.to(device), gt.to(device)
             output = model(img)
             loss = criterion(output, gt)
@@ -102,12 +106,13 @@ def test_epoch(test_loader):
             translation_acc += test_t_acc.item()
             orientation_acc += test_q_acc.item()
 
-    print(f"Epoch: {epoch}, Test Loss: {test_loss/ len(test_loader):.4f}, Test translation acc: {test_t_acc:.4f}, Test orientaion acc: {test_q_acc:.4f}")
+            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Test Loss: {test_loss / (batch_idx + 1):.4f}, Test translation acc: {translation_acc / (batch_idx + 1):.4f}, Test orientation acc: {orientation_acc / (batch_idx + 1):.4f}')
 
     test_loss /= len(test_loader)
     translation_acc /= len(test_loader)
     orientation_acc /= len(test_loader)
-
+    progress_bar.close()
+    
     return test_loss, translation_acc, orientation_acc
 
 
@@ -115,7 +120,7 @@ if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/Dataset/custom_sequence/'
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = DeepVO(batchNorm=False).to(device)
+    model = DeepVO(batchNorm=True).to(device)
     load_pretrained_flownet()
 
     optimizer = optim.Adagrad(model.parameters(), lr=hyperparams['lr'])
@@ -123,6 +128,7 @@ if __name__ == '__main__':
     lr_scheduler = StepLR(optimizer, step_size=hyperparams['step_size'], gamma=hyperparams['gamma'])
 
     writer = SummaryWriter()
+    summary(model, input_size=(hyperparams['batch_size'], 6, 64, 1800))
     torch.set_printoptions(sci_mode=False, precision=10)
     torch.autograd.set_detect_anomaly(True)
 
@@ -151,5 +157,5 @@ if __name__ == '__main__':
 
     # Convert the model to torch.jit.script to load in cpp
     model_scripted = torch.jit.script(model)
-    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO-pytorch/TrainedModel/DeepVO.pth")
+    model_scripted.save("/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO-pytorch/TrainedModel/DeepVO_Scripted.pth")
     writer.close()

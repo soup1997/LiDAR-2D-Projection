@@ -17,27 +17,19 @@ class DeepVO(nn.Module):
             self.batchNorm,  64,  128, kernel_size=5, stride=2, dropout=self.conv_dropout[1])
         self.conv3 = self.conv(
             self.batchNorm, 128,  256, kernel_size=5, stride=2, dropout=self.conv_dropout[2])
-        self.conv3_1 = self.conv(
-            self.batchNorm, 256,  256, kernel_size=3, stride=1, dropout=self.conv_dropout[3])
         self.conv4 = self.conv(
             self.batchNorm, 256,  512, kernel_size=3, stride=2, dropout=self.conv_dropout[4])
-        self.conv4_1 = self.conv(
-            self.batchNorm, 512,  512, kernel_size=3, stride=1, dropout=self.conv_dropout[5])
         self.conv5 = self.conv(
             self.batchNorm, 512,  512, kernel_size=3, stride=2, dropout=self.conv_dropout[6])
-        self.conv5_1 = self.conv(
-            self.batchNorm, 512,  512, kernel_size=3, stride=1, dropout=self.conv_dropout[7])
-        self.conv6 = self.conv(
-            self.batchNorm, 512, 1024, kernel_size=3, stride=2, dropout=self.conv_dropout[8])
 
         # Comput the shape based on diff image size
         __tmp = Variable(torch.zeros(1, 6, 64, 1800))
         __tmp = self.encode_image(__tmp)
 
         # RNN
-        self.rnn = nn.LSTM(input_size=int(np.prod(__tmp.size())), hidden_size= 1000, num_layers=2, dropout=0, batch_first=True)
+        self.rnn = nn.LSTM(input_size=int(np.prod(__tmp.size())), hidden_size=500, num_layers=2, dropout=0, batch_first=True)
         self.rnn_drop_out = nn.Dropout(0.5)
-        self.linear = nn.Linear(in_features=1000, out_features=6)
+        self.linear = nn.Linear(in_features=500, out_features=6)
 
         # Initilization
         for m in self.modules():
@@ -88,11 +80,11 @@ class DeepVO(nn.Module):
             )
 
     def forward(self, x):
-        split_idx = x.size(2) // 2
-        img1 = x[:, :, :split_idx, :]
-        img2 = x[:, :, split_idx:, :]
+        # split_idx = x.size(2) // 2
+        # img1 = x[:, :, :split_idx, :]
+        # img2 = x[:, :, split_idx:, :]
 
-        x = torch.cat((img1, img2), dim=1)
+        # x = torch.cat((img1, img2), dim=1)
         x = self.encode_image(x)  # CNN
         x = x.view(x.size(0), 1, -1)
 
@@ -106,11 +98,10 @@ class DeepVO(nn.Module):
 
     def encode_image(self, x):
         out_conv2 = self.conv2(self.conv1(x))
-        out_conv3 = self.conv3_1(self.conv3(out_conv2))
-        out_conv4 = self.conv4_1(self.conv4(out_conv3))
-        out_conv5 = self.conv5_1(self.conv5(out_conv4))
-        out_conv6 = self.conv6(out_conv5)
-        return out_conv6
+        out_conv3 = self.conv3(out_conv2)
+        out_conv4 = self.conv4(out_conv3)
+        out_conv5 = self.conv5(out_conv4)
+        return out_conv5
 
     def weight_selfameters(self):
         return [selfam for name, selfam in self.named_selfameters() if 'weight' in name]
