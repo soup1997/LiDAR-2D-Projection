@@ -9,6 +9,9 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model
     private_nh.param<std::string>("imu_topic", imu_topic, "kitti/oxts/imu");
     ROS_INFO("Imu topic: %s", imu_topic.c_str());
 
+    private_nh.param<std::string>("img_topic", img_topic, "kitti/camera_color_right/image_raw");
+    ROS_INFO("Img topic: %s", img_topic.c_str());
+
     private_nh.getParam("HDL64E/HRES", _hres);
     ROS_INFO("HDL64E horizontal resolution: %.2f", _hres);
 
@@ -45,7 +48,7 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model
     _gyro_std *= (CV_PI / 180.0); //  need to convert [deg/s] to [rad/s]
 
     /*------------ROS Pub-Sub Definition-----------*/
-    pcd_sub = nh.subscribe(point_cloud_topic, 10, &PFO::cloudCallback, this);
+    //pcd_sub = nh.subscribe(point_cloud_topic, 10, &PFO::cloudCallback, this);
     imu_sub = nh.subscribe(imu_topic, 10, &PFO::imuCallback, this);
     path_pub = nh.advertise<nav_msgs::Path>("path", 10);
 
