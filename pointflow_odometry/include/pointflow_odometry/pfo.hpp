@@ -34,7 +34,8 @@ class PFO{
         ros::Subscriber img_sub; // Img Subscriber
         ros::Publisher path_pub; // path publisher
 
-        std::string point_cloud_topic;
+        std::string point_cloud_topic;   
+        std::string img_topic;
         std::string imu_topic;
 
         /*---------LiDAR Parameters---------*/
