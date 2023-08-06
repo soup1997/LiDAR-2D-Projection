@@ -22,8 +22,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
 
-#include <pointflow_odometry/ieskf.hpp>
+//#include <pointflow_odometry/ieskf.hpp>
 #include <pointflow_odometry/util.hpp>
 
 class PFO{
