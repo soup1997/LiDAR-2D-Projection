@@ -29,7 +29,7 @@
 class PFO{
     private:
         /*---------ROS Definition---------*/
-        //ros::Subscriber pcd_sub; // PointCloud2 Subscriber
+        ros::Subscriber pcd_sub; // PointCloud2 Subscriber
         ros::Subscriber imu_sub; // Imu Subscriber
         ros::Subscriber img_sub; // Img Subscriber
         ros::Publisher path_pub; // path publisher
@@ -72,7 +72,7 @@ class PFO{
         PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path);
         ~PFO(){};
 
-        //void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
+        void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg);
         void imgCallback(const sensor_msgs::Image::ConstPtr &msg);
         void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
         void pathPublisher(const Eigen::Vector3f &translation, const Eigen::Quaternionf &orientation);
