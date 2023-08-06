@@ -203,7 +203,34 @@ void PFO::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
     std::chrono::milliseconds sec(std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
     std::cout << "Execution Time on CloudCallback: " << sec.count() << " ms\n";
 }
+void PFO::imgCallback(const sensor_msgs::Image::ConstPtr &msg){
+    if (msg == nullptr) return;
 
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+    
+    cv_bridge::CvImagePtr cv_ptr(cv_bridge::toCvCopty(*msg, enc::BGR8);
+    
+    if (_img_queue.size() >= 2)
+    {
+        stack_image();
+        torch::Tensor tensor_img(matToTensor(_stacked_img));
+        torch::Tensor output(_model.forward({tensor_img}).toTensor()); 
+        std::cout << "1: " << output << std::endl;
+        
+        Eigen::VectorXf output_vec(tensorToEigen(output)); // output이랑 tensorToEigen결과랑 다름, 수정 필요
+        Eigen::Vector3f translation(output_vec(0), output_vec(1), output_vec(2));
+        Eigen::Quaternionf orientation(output_vec(3), output_vec(4), output_vec(5), output_vec(6));
+        orientation.normalize();
+
+        std::cout << "2: " << translation << " " << orientation.coeffs() << std::endl;
+
+        pathPublisher(translation, orientation);
+    }
+    
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    std::chrono::milliseconds sec(std::chrono::duration_cast<std::chrono::milliseconds>(end - start));
+    std::cout << "Execution Time on imgCallback: " << sec.count() << " ms\n";
+}
 void PFO::imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
 {
     if (msg == nullptr)
