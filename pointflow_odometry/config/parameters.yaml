@@ -1,6 +1,7 @@
 point_cloud_topic: kitti/velo/pointcloud
 imu_topic: kitti/oxts/imu
 gnss_topic: kitti/oxts/gps/fix
+img_topic: kitti/camera_color_right/image_raw
 
 OXTS_RT3003:
   ACC_BIAS: 4.905e-5 # [m/s^2]
