@@ -30,9 +30,12 @@ class KittiDataset(Dataset):
         self.sequence = sequence
         self.idx = valid_time
 
+        self.img_mean = [0.035257386094197984, 0.09199527037261895, 0.6839869662248566]
+        self.img_std = [0.12699978115124395, 0.2200357746407152, 0.17142374997908795]
+        
         # Set (img, gt) paths
         self.image_dir = os.path.join(root_dir, f'seq{sequence:02d}', 'img')
-        self.pose_dir = os.path.join(root_dir, f'seq{sequence:02d}', f'relative{sequence:02d}.txt')
+        self.pose_dir = os.path.join(root_dir, f'seq{sequence:02d}', f'local_gt{sequence:02d}.txt')
 
         # Load (img, gt) files
         self.image_files = natsorted([f for f in os.listdir(self.image_dir) if f.endswith('.jpg')])[valid_time[0]: valid_time[1]+1]
@@ -40,7 +43,9 @@ class KittiDataset(Dataset):
 
         # According to sequence, apply different transformations
         self.transforms = transforms.Compose([transforms.ToTensor(),
-                                              transforms.Resize((64, 1800))])
+                                              transforms.Normalize(mean=self.img_mean, std=self.img_std),
+                                              transforms.Resize((128, 1800))])
+        
 
     def _load_poses(self):
         pose_data = np.loadtxt(self.pose_dir)
@@ -55,20 +60,15 @@ class KittiDataset(Dataset):
         return len(self.image_files) - 1
 
     def __getitem__(self, idx):
-        img1_name = self.image_files[idx]
-        img2_name = self.image_files[idx+1]
-
-        img1_path = os.path.join(self.image_dir, img1_name)
-        img2_path = os.path.join(self.image_dir, img2_name)
-
-        img1_tensor = self.transforms(np.array(Image.open(img1_path)))
-        img2_tensor = self.transforms(np.array(Image.open(img2_path)))
-
-        stacked_img = self._stack_image(img1_tensor, img2_tensor)
+        img_name = self.image_files[idx]
+        print(img_name)
+        print(idx)
+        img_path = os.path.join(self.image_dir, img_name)
+        img_tensor = self.transforms(np.array(Image.open(img_path)))
 
         ground_truth = self.pose_file[idx]
 
-        return stacked_img, ground_truth
+        return img_tensor, ground_truth
 
 
 def calcultate_norm(dataset):
@@ -89,7 +89,6 @@ def calcultate_norm(dataset):
 
 def load_dataset(root_dir, batch_size=64, shuffle=True):
     train_datasets = []
-    valid_datasets = []
     test_datasets = []
 
     for seq, valid_time in kitti_time.items():
@@ -119,7 +118,7 @@ def load_dataset(root_dir, batch_size=64, shuffle=True):
 
 if __name__ == '__main__':
     root_dir = '/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/Dataset/custom_sequence/'
-    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=8)
+    train_loader, test_loader = load_dataset(root_dir=root_dir, batch_size=8, shuffle=False)
 
     print("Train Loader Length:", len(train_loader))
     print("Test Loader Length:", len(test_loader))

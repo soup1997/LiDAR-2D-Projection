@@ -121,10 +121,10 @@ def create_pose_data(gt_path='/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/
 
                 if local:
                     local_poses = get_local_pose(global_pose)
-                    np.savetxt(gt_path + 'relative' + gt, local_poses)
+                    np.savetxt(gt_path + 'relative' + gt, local_poses, fmt="%.3e")
 
                 else:
                     np.savetxt(gt_path+'euler'+gt, global_pose)
 
 if __name__ == '__main__':
-    create_pose_data(local=False)
+    create_pose_data(local=True)
