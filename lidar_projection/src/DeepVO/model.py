@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn.init import kaiming_normal_
 import numpy as np
+from typing import Optional, Tuple
 
 class Criterion(nn.Module):
     def __init__(self, k=100.0):
@@ -114,7 +115,6 @@ class DeepVO(nn.Module):
 
         # Load FlowNet weights pretrained with FlyingChairs
         # NOTE: the pretrained model assumes image rgb values in range [-0.5, 0.5]
-
         # Use only conv-layer of FlowNet as CNN for DeepVO
         model_dict = self.state_dict()
         update_dict = {k: v for k, v in pretrained_w['state_dict'].items() if k in model_dict}
@@ -127,7 +127,7 @@ class DeepVO(nn.Module):
     def bias_selfameters(self):
         return [selfam for name, selfam in self.named_selfameters() if 'bias' in name]
 
-    def forward(self, x, prev=None):
+    def forward(self, x, prev: Optional[Tuple[torch.Tensor, torch.Tensor]] = None):
         # x: torch.Size([8, 7, 3, 64, 1200]) which is (batch, seq_len, channel, width, height)
 
         x = torch.cat((x[:, :-1, :, :, :], x[:, 1:, :, :, :]), dim=2) # torch.Size([8, 6, 6, 64, 1200])
@@ -140,7 +140,11 @@ class DeepVO(nn.Module):
         x = x.view(batch_size, seq_len, -1)
 
         # RNN
-        out, _ = self.rnn(x) if not prev else self.rnn(x, prev)
+        if prev is None:
+            out, hc = self.rnn(x)
+        else:
+            out, hc = self.rnn(x, prev)
+
         out = self.rnn_dropout(out)
         pose = self.linear(out) # torch.Size([8, 6, 6])
 

@@ -41,7 +41,7 @@ def valid_one_epoch(valid_loader):
             rotation_error += valid_r_error.item()
             position_error += valid_p_error.item()
 
-            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Valid Loss: {valid_loss / (batch_idx + 1):.4f}, Valid position error: {valid_p_error:.4f}, Valid rotation error: {valid_r_error:.4f}')
+            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Valid Loss: {valid_loss / (batch_idx + 1):.6f}, Valid position error: {valid_p_error / (batch_idx + 1):.6f}, Valid rotation error: {valid_r_error / (batch_idx + 1):.6f}')
 
     valid_loss /= len(valid_loader)
     position_error /= len(valid_loader)
@@ -73,7 +73,7 @@ def train_one_epoch(epoch, train_loader):
         rotation_error += train_r_error.item()
         position_error += train_p_error.item()
 
-        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.4f}, Train position error: {train_p_error:.4f}, Train rotation error: {train_r_error:.4f}')
+        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.6f}, Train position error: {train_p_error / (batch_idx + 1):.6f}, Train rotation error: {train_r_error / (batch_idx + 1):.6f}')
 
     train_loss /= len(train_loader)
     position_error /= len(train_loader)
@@ -103,26 +103,20 @@ if __name__=='__main__':
 
     for epoch in range(1, num_epochs+1):
         train_loader, valid_loader, _ = load_dataset(dataset_dir, batch_size=hyperparams['batch_size'], shuffle=True)
-        train_loss, train_t_acc, train_q_acc = train_one_epoch(epoch, train_loader)
+        train_loss, train_t_err, train_q_err = train_one_epoch(epoch, train_loader)
 
         writer.add_scalar("Loss/Train", train_loss, epoch)
-        writer.add_scalar("Translation Acc/Train", train_t_acc, epoch)
-        writer.add_scalar("Orientation Acc/Train", train_q_acc, epoch)
+        writer.add_scalar("Translation Error/Train", train_t_err, epoch)
+        writer.add_scalar("Orientation Error/Train", train_q_err, epoch)
 
-        valid_loss, valid_t_acc, valid_q_acc = valid_one_epoch(valid_loader)
+        valid_loss, valid_t_err, valid_q_err = valid_one_epoch(valid_loader)
         writer.add_scalar("Loss/Valid", valid_loss, epoch)
-        writer.add_scalar("Translation Acc/Valid", valid_t_acc, epoch)
-        writer.add_scalar("Orientation Acc/Valid", valid_q_acc, epoch)
+        writer.add_scalar("Translation Error/Valid", valid_t_err, epoch)
+        writer.add_scalar("Orientation Error/Valid", valid_q_err, epoch)
 
         if epoch % hyperparams['lr_step'] == 0:
             scheduler.step()
-            torch.save(model.state_dict(), f"Epoch:{epoch}, Loss: {valid_loss}, Acc: {valid_t_acc}{valid_q_acc}_DeepVO.pth")
+            model.eval()
+            torch.save(model.state_dict(), f"Error:{valid_t_err},{valid_q_err}_DeepVO.pth")
 
-    # After training, save the model
-    model.to('cpu')
-    model.eval()
-
-    torch.save(model.state_dict(), "DeepVO.pth")
-    model_scripted = torch.jit.script(model)
-    model_scripted.save("DeepVO_scripted.pt")
     writer.close()
