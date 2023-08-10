@@ -17,7 +17,6 @@
 https://github.com/tomas789/kitti2bag
 
 ## To Do
-- [ ] Fix the overfitting problem
 - [ ] Fusion with IMU as IESKF/AESKF method
 - [ ] Pose graph optimization
 - [ ] Mapping
