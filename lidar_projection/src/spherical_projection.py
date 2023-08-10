@@ -8,6 +8,7 @@ import sensor_msgs.point_cloud2 as pc2
 import cv2
 import numpy as np
 from tools import *
+from collections import deque
 
 kitti_time = {0: [0, 4540],
               1: [0, 1100],
@@ -103,17 +104,13 @@ class lidar_projection:
         r_points = np.clip(r_points, a_min=0, a_max=self.lidar_range)
 
         # CONVERT TO IMAGE ARRAY
-        img = np.zeros((y_max + 1, x_max + 1, 3), dtype=np.uint8)
+        img = np.zeros((y_max + 1, x_max + 1, 1), dtype=np.uint8)
         
         img[y_img, x_img, 0] = normalize(r_points, min=0.0, max=self.lidar_range - 40.0) # Channel 0: depth
-        img[y_img, x_img, 1] = normalize(x_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 1: X
-        img[y_img, x_img, 2] = normalize(y_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 2: Y
+        # img[y_img, x_img, 1] = normalize(x_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 1: X
+        # img[y_img, x_img, 2] = normalize(y_points, min=-self.lidar_range - 40.0, max=self.lidar_range - 40.0) # Channel 2: Y
 
         return img
-
-    @ measure_execution_time
-    def stack_image(self, img1, img2):
-        return np.concatenate((img1, img2), axis=2)
 
     def main(self, show=False, save=True):
         global cnt
@@ -125,22 +122,20 @@ class lidar_projection:
 
         while not rospy.is_shutdown():
             img = self.pointCloud2ParnomaicView(msg=self.pcd)
-
-            if show:    
-                cv2.imshow('Depth', img[:, :, 0])
-                cv2.imshow('x', img[:, :, 1])
-                cv2.imshow('y', img[:, :, 2])
-                cv2.imshow('Image', img)
-                cv2.waitKey(1)
+            jet_img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
 
             if save:
-                cv2.imwrite('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), img)
+                cv2.imwrite('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/Dataset/custom_sequence/seq10/img/seq10_{0}.jpg'.format(cnt), jet_img)
                 print(f'{cnt}/{kitti_time[10][-1]} of projection image')
                 cnt += 1
                 
                 if(cnt > kitti_time[10][-1]):
                     rospy.signal_shutdown('End of time')
                     exit(0)
+
+            if show:
+                cv2.imshow('Image', img)
+                cv2.waitKey(1)
 
             self.rate.sleep()
 
