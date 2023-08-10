@@ -1,2 +1,2 @@
-lidar_projection/src/Dataset/custom_sequence/
-lidar_projection/src/DeepVO-pytorch/TrainedModel/
+lidar_projection/src/Dataset/dataset/
+lidar_projection/src/DeepVO/trained/
