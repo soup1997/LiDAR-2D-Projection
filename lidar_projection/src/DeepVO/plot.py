@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.util import eular_to_SO3
 
-gt_data = np.load('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO/dataset/poses/10.npy')
-output_data = np.loadtxt('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO/10_ouput.txt')
+gt_data = np.load('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO/dataset/poses/00.npy')
+output_data = np.loadtxt('/home/smeet/catkin_ws/src/LiDAR-Inertial-Odometry/lidar_projection/src/DeepVO/00_ouput.txt')
 
 H_new = np.identity(4)
 H_new2 = np.identity(4)
@@ -45,7 +45,7 @@ for i in range(output_data.shape[0]):
 output_list = np.array(output_list)
 
 plt.figure(0)
-plt.plot(gt_list[:, 0], gt_list[:, 2], 'r')
-plt.plot(output_list[:, 0], output_list[:, 2], 'b')
-
+plt.plot(gt_list[:, 0], gt_list[:, 2], 'r', label='Ground Truth')
+plt.plot(output_list[:, 0], output_list[:, 2], 'b', label='Train Dataset')
+plt.legend()
 plt.show()

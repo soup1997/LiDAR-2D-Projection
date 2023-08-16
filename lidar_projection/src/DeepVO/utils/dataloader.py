@@ -54,7 +54,7 @@ def load_dataset(dataset_dir, batch_size=64, shuffle=True):
     for seq, valid_time in kitti_dataset.items():
         dataset = ImageSequenceDataset(dataset_dir=dataset_dir, kitti_sequence=seq, seq_len=7)
 
-        if seq == '05':
+        if seq== '04' or seq == '06':
             valid_datasets.append(dataset)
 
         elif seq == '09' or seq == '10':

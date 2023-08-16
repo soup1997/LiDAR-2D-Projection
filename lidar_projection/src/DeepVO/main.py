@@ -1,5 +1,4 @@
 import torch
-import torch.optim as optim
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -46,16 +45,18 @@ def valid_one_epoch(valid_loader):
     valid_loss /= len(valid_loader)
     position_error /= len(valid_loader)
     rotation_error /= len(valid_loader)
+    print("\n")
     progress_bar.close()
 
     return valid_loss, position_error, rotation_error
 
 def train_one_epoch(epoch, train_loader):
+    model.train()
+
     train_loss = 0.0
     position_error = 0.0
     rotation_error = 0.0
 
-    model.train()
     progress_bar = tqdm(train_loader, total=len(train_loader), desc=f'Epoch {epoch}/{num_epochs}, Train Loss: 0.0000')
 
     for batch_idx, (img, gt) in enumerate(progress_bar):
