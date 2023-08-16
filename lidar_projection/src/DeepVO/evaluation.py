@@ -621,33 +621,6 @@ class kittiOdomEval():
 
             plt.close('all')
 
-        # total_avg_segment_errs = self.computeSegmentErr(total_err)
-        # total_avg_speed_errs   = self.computeSpeedErr(total_err)        
-        # self.plotError_segment('total_error_seg', total_avg_segment_errs, eval_dir)
-        # self.plotError_speed('total_error_speed', total_avg_speed_errs, eval_dir)
-
-
-        # if ave_errs:
-        #     with open(eval_dir + '/all_stats.txt', 'w') as f:
-        #         for seq, ave_err in ave_errs.items():
-        #             f.writelines('%s:\n' % seq)
-        #             f.writelines('Average sequence translation RMSE (%):    {0:.4f}\n'.format(ave_err[0] * 100))
-        #             f.writelines('Average sequence rotation error (deg/m):  {0:.4f}\n\n'.format(ave_err[1]/np.pi * 180))
-
-            # parent_path, model_step = os.path.split(os.path.normpath(eval_dir))
-            # with open(os.path.join(parent_path, 'test_statistics.txt'), 'a') as f:
-            #     f.writelines('------------------ %s -----------------\n' % model_step)
-            #     for seq, ave_err in ave_errs.items():
-            #         f.writelines('%s:\n' % seq)
-            #         f.writelines('Average sequence translation RMSE (%):    {0:.4f}\n'.format(ave_err[0] * 100))
-            #         f.writelines('Average sequence rotation error (deg/m):  {0:.4f}\n\n'.format(ave_err[1]/np.pi * 180))
-                      
-        # print ("-------------------------------------------------")
-        # for seq in range(len(ave_t_errs)):
-        #     print ("{0:.2f}".format(ave_t_errs[seq]*100))
-        #     print ("{0:.2f}".format(ave_r_errs[seq]/np.pi*180*100))
-        # print ("-------------------------------------------------")
-
      
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KITTI Evaluation toolkit')

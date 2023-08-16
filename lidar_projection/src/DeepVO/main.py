@@ -8,8 +8,8 @@ from model import DeepVO, Criterion
 from utils.dataloader import *
 
 # define model hyperparmeters
-hyperparams = {'epochs': 100,
-               'lr': 1e-5,
+hyperparams = {'epochs': 200,
+               'lr': 1e-3,
                'batch_size': 8,
                'weight_decay': 5e-6,
                'lr_step': 50,
@@ -41,7 +41,7 @@ def valid_one_epoch(valid_loader):
             rotation_error += valid_r_error.item()
             position_error += valid_p_error.item()
 
-            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Valid Loss: {valid_loss / (batch_idx + 1):.6f}, Valid position error: {valid_p_error / (batch_idx + 1):.6f}, Valid rotation error: {valid_r_error / (batch_idx + 1):.6f}')
+            progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Valid Loss: {valid_loss / (batch_idx + 1):.5f}, Valid position error: {position_error / (batch_idx + 1):.5f}, Valid rotation error: {rotation_error / (batch_idx + 1):.5f}')
 
     valid_loss /= len(valid_loader)
     position_error /= len(valid_loader)
@@ -73,7 +73,7 @@ def train_one_epoch(epoch, train_loader):
         rotation_error += train_r_error.item()
         position_error += train_p_error.item()
 
-        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.6f}, Train position error: {train_p_error / (batch_idx + 1):.6f}, Train rotation error: {train_r_error / (batch_idx + 1):.6f}')
+        progress_bar.set_description(f'Epoch {epoch}/{num_epochs}, Train Loss: {train_loss / (batch_idx + 1):.5f}, Train position error: {position_error / (batch_idx + 1):.5f}, Train rotation error: {rotation_error / (batch_idx + 1):.5f}')
 
     train_loss /= len(train_loader)
     position_error /= len(train_loader)
