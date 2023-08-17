@@ -68,7 +68,8 @@ class PFO{
         /*---------6-DOF Variables---------*/
         Eigen::Vector3d _translation;
         Eigen::Quaterniond _orientation;
-    
+        Eigen::Matrix3d _pose;
+
     public:
         PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model_path);
         ~PFO(){};
