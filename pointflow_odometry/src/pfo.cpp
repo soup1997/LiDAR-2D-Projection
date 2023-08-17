@@ -52,6 +52,11 @@ PFO::PFO(ros::NodeHandle nh, ros::NodeHandle private_nh, const std::string model
     imu_sub = nh.subscribe(imu_topic, 10, &PFO::imuCallback, this);
     path_pub = nh.advertise<nav_msgs::Path>("path", 10);
 
+    /*------------6DOF Variables-----------*/
+    _translation = Eigen::Vector3d::Zero();
+    _orientation.setIdentity();
+    _pose = Eigen::Matrix3d::Identity();
+
     /*------------Pytorch Model-----------*/
     _model = load_model(model_path);
     _model.eval();
