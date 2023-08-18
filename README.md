@@ -6,7 +6,10 @@ ROS-Implementation of LiDAR 2d projection
 
 ## Usage
 1. Download the kiti bag file from [kitti2bag](https://github.com/tomas789/kitti2bag)
-2. 
+2. Modify `args` indicating the path of the bag file in the launch file
+```xml
+<node pkg="rosbag" type="play" name="rosbag" args="-l your_bag_file_path"/>
+```
 3. Run the following command
 ```bash
 roslaunch lidar_projection projection.launch
