@@ -142,4 +142,4 @@ class lidar_projection:
 if __name__ == '__main__':
     cnt = 0
     lp = lidar_projection(lidar_model="HDL64E")
-    lp.main(show=False, save=True)
+    lp.main(show=True, save=False)
